@@ -1,0 +1,890 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ML for Business Analytics — Student Query Form</title>
+<style>
+  :root {
+    --green:       #1D9E75;
+    --green-light: #E1F5EE;
+    --green-dark:  #0F6E56;
+    --green-mid:   #5DCAA5;
+    --red:         #D85A30;
+    --red-light:   #FAECE7;
+    --amber:       #FAEEDA;
+    --amber-dark:  #854F0B;
+    --blue-light:  #E6F1FB;
+    --blue-dark:   #185FA5;
+    --purple-light:#F0ECFA;
+    --purple:      #6B3FA0;
+    --teal-light:  #E0F4F4;
+    --teal:        #0B7A75;
+    --gray:        #F8F8F7;
+    --border:      #e0e0dc;
+    --text:        #1a1a18;
+    --text-sec:    #5f5e5a;
+    --text-hint:   #9a9992;
+    --white:       #ffffff;
+    --radius:      8px;
+    --radius-lg:   12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: #f4f3ee;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 3rem;
+  }
+
+  .page-wrap { max-width: 700px; margin: 0 auto; }
+
+  /* ── Top bar ── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .top-bar .uni-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
+    color: var(--text-sec); text-transform: uppercase;
+  }
+  .top-bar a { font-size: 12px; color: var(--green); text-decoration: none; }
+  .top-bar a:hover { text-decoration: underline; }
+
+  .card {
+    background: var(--white); border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border); padding: 2rem; margin-bottom: 1rem;
+  }
+
+  .form-header { border-left: 3px solid var(--green); padding-left: 14px; margin-bottom: 2rem; }
+  .form-header h1 { font-size: 19px; font-weight: 700; color: var(--text); }
+  .form-header p  { font-size: 13px; color: var(--text-sec); margin-top: 4px; }
+
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
+  }
+  .badge-green { background: var(--green-light); color: var(--green-dark); }
+  .badge-gray  { background: var(--gray); color: var(--text-sec); border: 0.5px solid var(--border); }
+
+  .section-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--text-sec);
+    margin: 1.5rem 0 0.8rem; padding-bottom: 7px;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .field-row        { display: grid; gap: 14px; margin-bottom: 14px; }
+  .field-row.two    { grid-template-columns: 1fr 1fr; }
+  .field-row.three  { grid-template-columns: 1fr 1fr 1fr; }
+  .field            { display: flex; flex-direction: column; gap: 5px; }
+
+  label { font-size: 13px; color: var(--text-sec); font-weight: 500; }
+  label .req { color: var(--red); margin-left: 2px; }
+
+  input, select, textarea {
+    font-family: inherit; font-size: 14px; color: var(--text);
+    background: var(--white); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 9px 12px; width: 100%; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+  }
+  textarea { resize: vertical; min-height: 110px; line-height: 1.6; }
+
+  .email-wrap { position: relative; }
+  .email-wrap input { padding-right: 36px; }
+  .email-icon { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; display: none; }
+
+  .hint      { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
+  .error-msg { font-size: 11px; color: var(--red); margin-top: 3px; display: none; }
+
+  .field-invalid input,
+  .field-invalid select,
+  .field-invalid textarea { border-color: var(--red); }
+
+  /* ── Lab section (hidden for Final / Project / Assignment types) ── */
+  #lab-section.hidden { display: none; }
+
+  /* ── Multi-lab chip grid ── */
+  .lab-chips {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 8px; margin-bottom: 6px;
+  }
+  .lab-chip {
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    padding: 8px 4px; cursor: pointer; text-align: center;
+    font-size: 12px; font-weight: 600; color: var(--text-sec);
+    user-select: none; transition: all 0.13s; background: var(--white);
+  }
+  .lab-chip:hover  { border-color: var(--green); color: var(--green); }
+  .lab-chip.active { border: 1.5px solid var(--green); background: var(--green-light); color: var(--green-dark); }
+  .lab-chip-wrap   { display: flex; flex-direction: column; gap: 5px; }
+  #err-labnum      { font-size: 11px; color: var(--red); display: none; margin-top: 2px; }
+
+  /* ── Query type cards ── */
+  .qtype-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; margin-bottom: 6px;
+  }
+  .qtype-card {
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    padding: 14px 10px; cursor: pointer; text-align: center;
+    transition: all 0.15s; user-select: none;
+  }
+  .qtype-card:hover    { border-color: var(--green); background: var(--green-light); }
+  .qtype-card.selected { border: 1.5px solid var(--green); background: var(--green-light); }
+  .qtype-card svg      { display: block; margin: 0 auto 7px; }
+  .qtype-label { font-size: 13px; font-weight: 700; color: var(--text); }
+  .qtype-sub   { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+
+  /* ── Dynamic section ── */
+  .dynamic-section {
+    background: var(--gray); border-radius: var(--radius);
+    border: 0.5px solid var(--border); padding: 16px; margin-top: 12px;
+  }
+  .dyn-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 99px; margin-bottom: 14px;
+  }
+
+  /* ── File zone ── */
+  .file-zone {
+    border: 0.5px dashed var(--border); border-radius: var(--radius);
+    padding: 18px; text-align: center; cursor: pointer;
+    background: var(--gray); transition: border-color 0.15s;
+  }
+  .file-zone:hover  { border-color: var(--green); }
+  .file-zone p      { font-size: 13px; color: var(--text-sec); margin-top: 6px; }
+  .file-zone .f-sub { font-size: 11px; color: var(--text-hint); }
+  .file-name        { font-size: 12px; color: var(--green); margin-top: 6px; font-weight: 600; }
+
+  /* ── Submit row ── */
+  .submit-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 1.75rem; padding-top: 1.25rem;
+    border-top: 0.5px solid var(--border);
+  }
+  .btn-primary {
+    background: var(--green); color: #fff; border: none;
+    border-radius: var(--radius); padding: 11px 26px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 8px;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover    { background: var(--green-dark); }
+  .btn-primary:disabled { background: var(--green-mid); cursor: not-allowed; }
+  .btn-ghost {
+    background: none; border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 11px 18px;
+    font-size: 13px; color: var(--text-sec); cursor: pointer;
+  }
+  .btn-ghost:hover { background: var(--gray); }
+
+  /* ── Success card ── */
+  .success-card {
+    display: none; background: var(--green-light);
+    border: 0.5px solid var(--green-mid);
+    border-radius: var(--radius-lg); padding: 2.5rem 2rem; text-align: center;
+  }
+  .success-card h2     { font-size: 18px; color: #085041; margin-top: 12px; }
+  .success-card p      { font-size: 14px; color: var(--green-dark); margin-top: 8px; line-height: 1.7; }
+  .success-card .s-ref { font-size: 12px; font-weight: 700; color: var(--green-dark); margin-top: 10px; letter-spacing: 0.04em; }
+
+  /* ── Errors ── */
+  .rate-error {
+    display: none; background: var(--red-light); border: 0.5px solid #F0997B;
+    border-radius: var(--radius); padding: 12px 16px;
+    font-size: 13px; color: var(--red); margin-bottom: 14px; text-align: center;
+  }
+
+  /* ── Loading notice ── */
+  .notice-loading {
+    display: none; background: #f0f0ec; color: var(--text-sec);
+    border-radius: var(--radius); padding: 10px 14px;
+    font-size: 13px; margin-bottom: 14px; text-align: center;
+  }
+
+  /* ── Spinner ── */
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Honeypot ── */
+  .hp-field { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
+
+  @media (max-width: 560px) {
+    .card { padding: 1.25rem; }
+    .field-row.two   { grid-template-columns: 1fr; }
+    .field-row.three { grid-template-columns: 1fr 1fr; }
+    .qtype-grid      { grid-template-columns: 1fr 1fr; }
+    .lab-chips       { grid-template-columns: repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <span class="uni-label">FAST-NUCES · Islamabad</span>
+    <a href="admin.html">Instructor login →</a>
+  </div>
+
+  <!-- ── Main form card ── -->
+  <div class="card" id="main-card">
+
+    <div class="form-header">
+      <h1>ML for Business Analytics — LAB</h1>
+      <p>Student Query Submission &nbsp;·&nbsp; Spring 2026</p>
+      <div class="badge-row">
+        <span class="badge badge-green">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          NU email verified
+        </span>
+        <span class="badge badge-gray">BSBA-6A &nbsp;·&nbsp; BSBA-6B &nbsp;·&nbsp; MSBA</span>
+      </div>
+    </div>
+
+    <!-- Honeypot -->
+    <div class="hp-field" aria-hidden="true">
+      <input type="text" id="hp" name="website" tabindex="-1" autocomplete="off"/>
+    </div>
+
+    <!-- Settings loading notice -->
+    <div class="notice-loading" id="settings-notice">Loading form…</div>
+
+    <!-- Rate-limit warning -->
+    <div class="rate-error" id="rate-error">⚠ Too many submissions. Please wait before trying again.</div>
+
+    <!-- ── § 1  Email ── -->
+    <div class="section-title">University email</div>
+    <div class="field-row">
+      <div class="field" id="f-email">
+        <label>NU Email <span class="req">*</span></label>
+        <div class="email-wrap">
+          <input type="email" id="email"
+                 placeholder="i231234@isb.nu.edu.pk  or  k231234@nu.edu.pk"
+                 oninput="liveEmail(this)" autocomplete="off" spellcheck="false"/>
+          <span class="email-icon" id="e-ok"  style="color:#1D9E75">✓</span>
+          <span class="email-icon" id="e-bad" style="color:#D85A30">✗</span>
+        </div>
+        <span class="hint">Prefix: i or k &nbsp;·&nbsp; Year: 20–26 &nbsp;·&nbsp; 4-digit ID &nbsp;·&nbsp; @isb.nu.edu.pk or @nu.edu.pk</span>
+        <span class="error-msg" id="err-email">Enter a valid NU email (e.g. i231234@isb.nu.edu.pk).</span>
+      </div>
+    </div>
+
+    <!-- ── § 2  Student info ── -->
+    <div class="section-title">Student information</div>
+    <div class="field-row two">
+      <div class="field" id="f-name">
+        <label>Full name <span class="req">*</span></label>
+        <input type="text" id="name" placeholder="e.g. Ali Hassan"/>
+        <span class="error-msg" id="err-name">Please enter your full name.</span>
+      </div>
+      <div class="field" id="f-roll">
+        <label>Roll number <span class="req">*</span></label>
+        <input type="text" id="roll" placeholder="23I-1234" oninput="fmtRoll(this)" maxlength="8"/>
+        <span class="hint">Format: 23I-1234 &nbsp;or&nbsp; 23K-5678</span>
+        <span class="error-msg" id="err-roll">Invalid format. Use 23I-1234 style.</span>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field" id="f-section">
+        <label>Section <span class="req">*</span></label>
+        <select id="section">
+          <option value="">Select your section</option>
+          <option value="BSBA-6A">BSBA-6A</option>
+          <option value="BSBA-6B">BSBA-6B</option>
+          <option value="MSBA">MSBA</option>
+        </select>
+        <span class="error-msg" id="err-section">Please select your section.</span>
+      </div>
+    </div>
+
+    <!-- ── § 3  Lab session (hidden for Final / Project / Assignment) ── -->
+    <div id="lab-section">
+      <div class="section-title">Lab session</div>
+      <div class="lab-chip-wrap">
+        <label>Lab number(s) <span class="req">*</span>
+          <span style="font-weight:400;color:var(--text-hint);margin-left:4px">(select one or more)</span>
+        </label>
+        <div class="lab-chips" id="lab-chips"></div>
+        <span class="error-msg" id="err-labnum">Please select at least one lab.</span>
+      </div>
+      <div class="field-row" style="margin-top:12px">
+        <div class="field" id="f-labdate">
+          <label>Lab date <span class="req">*</span></label>
+          <input type="date" id="labdate"/>
+          <span class="hint">For multiple labs, enter the date of the earliest selected lab.</span>
+          <span class="error-msg" id="err-labdate">Please select the lab date.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── § 4  Query type ── -->
+    <div class="section-title">Query type <span class="req">*</span></div>
+    <div class="qtype-grid" id="qtype-grid">
+      <!-- rendered dynamically after settings load -->
+    </div>
+    <span class="error-msg" id="err-type">Please select a query type.</span>
+    <div id="dyn-fields"></div>
+
+    <!-- ── § 5  Description ── -->
+    <div class="section-title">Description</div>
+    <div class="field" id="f-desc" style="margin-bottom:14px">
+      <label>Explain your query clearly <span class="req">*</span></label>
+      <textarea id="desc" placeholder="Describe the issue — include what happened, relevant dates, and the resolution you expect…"></textarea>
+      <span class="error-msg" id="err-desc">Please write at least 15 characters.</span>
+    </div>
+
+    <!-- ── § 6  Attachment ── -->
+    <div class="section-title">Supporting document <span style="font-weight:400;color:var(--text-hint)">(optional)</span></div>
+    <div class="file-zone" onclick="document.getElementById('fileInput').click()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9a9992" stroke-width="1.8" style="margin:0 auto">
+        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      <p>Click to attach proof, screenshot, or supporting document</p>
+      <p class="f-sub">PDF · JPG · PNG · DOCX — max 5 MB</p>
+      <p class="file-name" id="file-label"></p>
+      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.docx"
+             onchange="showFile(this)" style="display:none"/>
+    </div>
+    <p style="font-size:11px;color:var(--text-hint);margin-top:6px;text-align:center">Note: attachments are for your reference only — files are <strong>not transmitted</strong>. Email supporting documents directly to your instructor if required.</p>
+
+    <div class="submit-row">
+      <button class="btn-ghost" type="button" onclick="resetForm()">↺ Reset</button>
+      <button class="btn-primary" type="button" id="submitBtn" onclick="doSubmit()">
+        Submit query →
+      </button>
+    </div>
+
+  </div><!-- /main-card -->
+
+  <!-- ── Success screen ── -->
+  <div class="success-card" id="success-card">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.6" style="margin:0 auto">
+      <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <h2>Query submitted!</h2>
+    <p id="s-msg"></p>
+    <p class="s-ref" id="s-ref"></p>
+    <button class="btn-primary" style="margin: 18px auto 0" onclick="resetForm()">Submit another query</button>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONFIGURATION
+// ════════════════════════════════════════════════════════
+const SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbxXHOUZEb1oJXVk6Po6pYWTF-5o_2xUPSagZ6ClHw8TqHxOS121yTB5qGxzX7N7xwTqnA/exec';
+const MAX_PER_HOUR = 3;
+// ════════════════════════════════════════════════════════
+
+const EMAIL_RE = /^[ik](2[0-6])\d{4}@(isb\.)?nu\.edu\.pk$/i;
+const ROLL_RE  = /^\d{2}[IKik]-\d{4}$/;
+
+let selectedType   = '';
+let selectedLabs   = new Set();
+let loadedSettings = null;
+
+// ── All query type definitions ─────────────────────────
+const ALL_TYPES = {
+  attendance: {
+    label: 'Attendance',
+    sub:   'Missed / not marked',
+    badge: { bg: '#E1F5EE', color: '#0F6E56', label: 'Attendance query' },
+    needsLab: true,
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+      <circle cx="12" cy="16" r="1.5" fill="#1D9E75"/>
+    </svg>`,
+    dynHtml: `
+      <div class="field-row two">
+        <div class="field" id="f-adate">
+          <label>Attendance date <span class="req">*</span></label>
+          <input type="date" id="d-adate"/>
+          <span class="error-msg" id="err-adate">Please select the attendance date.</span>
+        </div>
+        <div class="field">
+          <label>Issue type</label>
+          <select id="d-aissue">
+            <option value="">Select issue</option>
+            <option>Present but not marked</option>
+            <option>Marked absent by mistake</option>
+            <option>Late entry not counted</option>
+            <option>Portal not showing attendance</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>`
+  },
+  marks: {
+    label: 'Lab Marks',
+    sub:   'Score discrepancy',
+    badge: { bg: '#FAEEDA', color: '#854F0B', label: 'Lab marks query' },
+    needsLab: true,
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.8">
+      <path d="M9 11l3 3L22 4"/>
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+    </svg>`,
+    dynHtml: `
+      <div class="field-row three">
+        <div class="field">
+          <label>Marks awarded</label>
+          <input type="number" id="d-mawd" min="0" max="100" placeholder="e.g. 7"/>
+        </div>
+        <div class="field">
+          <label>Marks expected</label>
+          <input type="number" id="d-mexp" min="0" max="100" placeholder="e.g. 10"/>
+        </div>
+        <div class="field">
+          <label>Discrepancy type</label>
+          <select id="d-mdisc">
+            <option value="">Select</option>
+            <option>Not entered in portal</option>
+            <option>Wrong marks entered</option>
+            <option>Partial despite complete work</option>
+            <option>Viva marks missing</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>`
+  },
+  assignment: {
+    label: 'Assignment',
+    sub:   'Assignment marks',
+    badge: { bg: '#E6F1FB', color: '#185FA5', label: 'Assignment query' },
+    needsLab: false,
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>`,
+    dynHtml: `
+      <div class="field-row two">
+        <div class="field">
+          <label>Assignment number / title</label>
+          <input type="text" id="d-assno" placeholder="e.g. Assignment 2"/>
+        </div>
+        <div class="field">
+          <label>Submission date</label>
+          <input type="date" id="d-assdate"/>
+        </div>
+      </div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Marks awarded</label>
+          <input type="number" id="d-mawd" min="0" max="100" placeholder="e.g. 14"/>
+        </div>
+        <div class="field">
+          <label>Marks expected</label>
+          <input type="number" id="d-mexp" min="0" max="100" placeholder="e.g. 20"/>
+        </div>
+        <div class="field">
+          <label>Issue type</label>
+          <select id="d-mdisc">
+            <option value="">Select</option>
+            <option>Not marked yet</option>
+            <option>Wrong marks entered</option>
+            <option>Penalty applied incorrectly</option>
+            <option>Partial despite complete work</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>`
+  },
+  final: {
+    label: 'Final Marks',
+    sub:   'Final exam / theory',
+    badge: { bg: '#F0ECFA', color: '#6B3FA0', label: 'Final marks query' },
+    needsLab: false,
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B3FA0" stroke-width="1.8">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>`,
+    dynHtml: `
+      <div class="field-row two">
+        <div class="field">
+          <label>Exam date</label>
+          <input type="date" id="d-findate"/>
+        </div>
+        <div class="field">
+          <label>Question / section (optional)</label>
+          <input type="text" id="d-finq" placeholder="e.g. Q3 Part B"/>
+        </div>
+      </div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Marks awarded</label>
+          <input type="number" id="d-mawd" min="0" max="100" placeholder="e.g. 30"/>
+        </div>
+        <div class="field">
+          <label>Marks expected</label>
+          <input type="number" id="d-mexp" min="0" max="100" placeholder="e.g. 40"/>
+        </div>
+        <div class="field">
+          <label>Discrepancy type</label>
+          <select id="d-mdisc">
+            <option value="">Select</option>
+            <option>Marks not entered</option>
+            <option>Wrong marks entered</option>
+            <option>Checking mistake</option>
+            <option>Paper not returned</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>`
+  },
+  project: {
+    label: 'Project Marks',
+    sub:   'Project / term work',
+    badge: { bg: '#E0F4F4', color: '#0B7A75', label: 'Project marks query' },
+    needsLab: false,
+    icon: `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7A75" stroke-width="1.8">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>`,
+    dynHtml: `
+      <div class="field-row two">
+        <div class="field">
+          <label>Project title / phase</label>
+          <input type="text" id="d-projt" placeholder="e.g. Final Term Project — Phase 2"/>
+        </div>
+        <div class="field">
+          <label>Submission / defence date</label>
+          <input type="date" id="d-projdate"/>
+        </div>
+      </div>
+      <div class="field-row three">
+        <div class="field">
+          <label>Marks awarded</label>
+          <input type="number" id="d-mawd" min="0" max="100" placeholder="e.g. 60"/>
+        </div>
+        <div class="field">
+          <label>Marks expected</label>
+          <input type="number" id="d-mexp" min="0" max="100" placeholder="e.g. 80"/>
+        </div>
+        <div class="field">
+          <label>Issue type</label>
+          <select id="d-mdisc">
+            <option value="">Select</option>
+            <option>Marks not entered</option>
+            <option>Wrong marks entered</option>
+            <option>Viva/presentation marks missing</option>
+            <option>Group member marks differ</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>`
+  }
+};
+
+// ── Build lab chip grid ────────────────────────────────
+(function buildLabChips() {
+  const grid = document.getElementById('lab-chips');
+  for (let i = 1; i <= 14; i++) {
+    const chip = document.createElement('div');
+    chip.className    = 'lab-chip';
+    chip.textContent  = 'Lab ' + i;
+    chip.dataset.lab  = 'Lab ' + i;
+    chip.onclick      = function() { toggleLab(this); };
+    grid.appendChild(chip);
+  }
+})();
+
+function toggleLab(chip) {
+  const lab = chip.dataset.lab;
+  if (selectedLabs.has(lab)) {
+    selectedLabs.delete(lab);
+    chip.classList.remove('active');
+  } else {
+    selectedLabs.add(lab);
+    chip.classList.add('active');
+  }
+  if (selectedLabs.size > 0) document.getElementById('err-labnum').style.display = 'none';
+}
+
+// ── Load settings from Apps Script & render query cards ─
+function loadSettings() {
+  const notice = document.getElementById('settings-notice');
+  notice.style.display = 'block';
+
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+    loadedSettings = { attendance:true, marks:true, assignment:true, final:true, project:true };
+    notice.style.display = 'none';
+    renderQueryCards();
+    return;
+  }
+
+  fetch(SCRIPT_URL + '?action=getSettings')
+    .then(r => r.json())
+    .then(d => {
+      loadedSettings = (d.status === 'ok') ? d.settings
+        : { attendance:true, marks:true, assignment:true, final:true, project:true };
+      notice.style.display = 'none';
+      renderQueryCards();
+    })
+    .catch(() => {
+      loadedSettings = { attendance:true, marks:true, assignment:true, final:true, project:true };
+      notice.style.display = 'none';
+      renderQueryCards();
+    });
+}
+
+function renderQueryCards() {
+  const grid    = document.getElementById('qtype-grid');
+  grid.innerHTML = '';
+  const enabled = Object.keys(ALL_TYPES).filter(k => loadedSettings[k]);
+
+  if (enabled.length === 0) {
+    grid.innerHTML = '<p style="color:var(--text-sec);font-size:13px;grid-column:1/-1;padding:12px 0">No query types are currently enabled. Please contact the instructor.</p>';
+    return;
+  }
+
+  const cols = enabled.length <= 2 ? enabled.length : enabled.length <= 4 ? 2 : 3;
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+  enabled.forEach(function(key) {
+    const t    = ALL_TYPES[key];
+    const card = document.createElement('div');
+    card.className    = 'qtype-card';
+    card.dataset.key  = key;
+    card.innerHTML    = t.icon + '<div class="qtype-label">' + t.label + '</div><div class="qtype-sub">' + t.sub + '</div>';
+    card.onclick      = function() { selectType(key); };
+    grid.appendChild(card);
+  });
+}
+
+// ── Email live validation ──────────────────────────────
+function liveEmail(el) {
+  const v  = el.value.trim();
+  const ok = EMAIL_RE.test(v);
+  document.getElementById('e-ok').style.display  = (v && ok)  ? 'inline' : 'none';
+  document.getElementById('e-bad').style.display = (v && !ok) ? 'inline' : 'none';
+  if (ok) clearErr('email');
+}
+
+// ── Roll number auto-format ────────────────────────────
+function fmtRoll(el) {
+  let v = el.value.toUpperCase().replace(/[^0-9IK\-]/g, '');
+  if (v.length >= 3 && !v.includes('-')) v = v.slice(0, 2) + v[2] + '-' + v.slice(3);
+  el.value = v;
+}
+
+// ── Select query type ─────────────────────────────────
+function selectType(type) {
+  selectedType = type;
+  document.querySelectorAll('.qtype-card').forEach(function(c) {
+    c.classList.toggle('selected', c.dataset.key === type);
+  });
+  document.getElementById('err-type').style.display = 'none';
+
+  // Show/hide lab section
+  document.getElementById('lab-section').classList.toggle('hidden', !ALL_TYPES[type].needsLab);
+
+  // Render dynamic fields
+  const t  = ALL_TYPES[type];
+  const df = document.getElementById('dyn-fields');
+  df.innerHTML = '<div class="dynamic-section"><span class="dyn-badge" style="background:' + t.badge.bg + ';color:' + t.badge.color + '">' + t.badge.label + '</span>' + t.dynHtml + '</div>';
+
+  // Cap dynamic date pickers to today
+  const today = new Date().toISOString().split('T')[0];
+  df.querySelectorAll('input[type=date]').forEach(function(dp) { dp.max = today; });
+}
+
+// ── File display ───────────────────────────────────────
+function showFile(input) {
+  document.getElementById('file-label').textContent =
+    input.files[0] ? '📎 ' + input.files[0].name : '';
+}
+
+// ── Rate limiting ──────────────────────────────────────
+function checkRate() {
+  const key = 'mllab_v2';
+  const now = Date.now();
+  let times = JSON.parse(localStorage.getItem(key) || '[]').filter(function(t) { return now - t < 3600000; });
+  if (times.length >= MAX_PER_HOUR) return false;
+  times.push(now);
+  localStorage.setItem(key, JSON.stringify(times));
+  return true;
+}
+
+// ── Helpers ────────────────────────────────────────────
+function gv(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+
+function showErr(id, msg) {
+  var f = document.getElementById('f-' + id);
+  if (f) f.classList.add('field-invalid');
+  var e = document.getElementById('err-' + id);
+  if (e) { if (msg) e.textContent = msg; e.style.display = 'block'; }
+}
+function clearErr(id) {
+  var f = document.getElementById('f-' + id);
+  if (f) f.classList.remove('field-invalid');
+  var e = document.getElementById('err-' + id);
+  if (e) e.style.display = 'none';
+}
+
+// ── Validation ─────────────────────────────────────────
+function validate() {
+  var ok = true;
+  document.querySelectorAll('.field-invalid').forEach(function(f) { f.classList.remove('field-invalid'); });
+  document.querySelectorAll('.error-msg').forEach(function(e)      { e.style.display = 'none'; });
+
+  if (!EMAIL_RE.test(gv('email').trim())) { showErr('email');   ok = false; }
+  if (gv('name').trim().length < 2)       { showErr('name');    ok = false; }
+  if (!ROLL_RE.test(gv('roll').trim()))   { showErr('roll');    ok = false; }
+  if (!gv('section'))                     { showErr('section'); ok = false; }
+
+  if (!selectedType) {
+    document.getElementById('err-type').style.display = 'block'; ok = false;
+  } else {
+    if (ALL_TYPES[selectedType].needsLab) {
+      if (selectedLabs.size === 0) {
+        document.getElementById('err-labnum').style.display = 'block'; ok = false;
+      }
+      if (!gv('labdate')) { showErr('labdate'); ok = false; }
+    }
+    if (selectedType === 'attendance' && document.getElementById('d-adate') && !gv('d-adate')) {
+      showErr('adate'); ok = false;
+    }
+  }
+
+  if (gv('desc').trim().length < 15) { showErr('desc'); ok = false; }
+
+  return ok;
+}
+
+// ── Submit ─────────────────────────────────────────────
+function doSubmit() {
+  if (document.getElementById('hp').value) return;
+
+  if (!validate()) {
+    var first = document.querySelector('.field-invalid input, .field-invalid select, .field-invalid textarea');
+    if (first) first.focus();
+    return;
+  }
+  if (!checkRate()) {
+    document.getElementById('rate-error').style.display = 'block'; return;
+  }
+
+  var btn = document.getElementById('submitBtn');
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner"></span> Submitting…';
+
+  var ref = 'QRY-' + Date.now().toString(36).toUpperCase().slice(-7);
+  var ts  = new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' });
+
+  var extraDate = gv('d-adate') || gv('d-assdate') || gv('d-findate') || gv('d-projdate') || '';
+
+  var issueParts = [
+    gv('d-aissue'),
+    gv('d-mdisc'),
+    gv('d-assno')  ? ('Asgn: '  + gv('d-assno'))  : '',
+    gv('d-finq')   ? ('Q: '     + gv('d-finq'))   : '',
+    gv('d-projt')  ? ('Proj: '  + gv('d-projt'))  : ''
+  ].filter(Boolean);
+
+  var labsSorted = Array.from(selectedLabs).sort(function(a, b) {
+    return parseInt(a.replace('Lab ', '')) - parseInt(b.replace('Lab ', ''));
+  });
+
+  var payload = {
+    action:        'submit',
+    referenceId:   ref,
+    timestamp:     ts,
+    email:         gv('email').trim().toLowerCase(),
+    name:          gv('name').trim(),
+    rollNumber:    gv('roll').trim().toUpperCase(),
+    section:       gv('section'),
+    labNumber:     labsSorted.join(', '),
+    labDate:       gv('labdate'),
+    queryType:     selectedType,
+    description:   gv('desc').trim(),
+    extraDate:     extraDate,
+    marksAwarded:  gv('d-mawd') || '',
+    marksExpected: gv('d-mexp') || '',
+    issue:         issueParts.join(' | '),
+    request:       '',
+    status:        'Pending',
+    notes:         ''
+  };
+
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+    console.log('Demo payload:', payload);
+    setTimeout(function() { showSuccess(payload); }, 900);
+    return;
+  }
+
+  fetch(SCRIPT_URL, {
+    method:  'POST',
+    mode:    'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload)
+  })
+  .then(function() { showSuccess(payload); })
+  .catch(function() { showSuccess(payload); });
+}
+
+function showSuccess(p) {
+  document.getElementById('main-card').style.display    = 'none';
+  document.getElementById('success-card').style.display = 'block';
+  var typeLabel = ALL_TYPES[p.queryType] ? ALL_TYPES[p.queryType].label : p.queryType;
+  document.getElementById('s-msg').textContent =
+    'Query recorded for ' + p.name + ' (' + p.rollNumber + '), ' + p.section + '. ' +
+    'The instructor will review your ' + typeLabel + ' query and respond to ' + p.email + '.';
+  document.getElementById('s-ref').textContent = 'Reference: ' + p.referenceId;
+  var btn = document.getElementById('submitBtn');
+  btn.disabled  = false;
+  btn.innerHTML = 'Submit query →';
+}
+
+// ── Reset ──────────────────────────────────────────────
+function resetForm() {
+  selectedType = '';
+  selectedLabs.clear();
+  document.querySelectorAll('.lab-chip').forEach(function(c) { c.classList.remove('active'); });
+
+  var mc = document.getElementById('main-card');
+  mc.querySelectorAll('input:not([type=file]), select, textarea').forEach(function(e) { e.value = ''; });
+  mc.style.display = 'block';
+
+  document.getElementById('success-card').style.display  = 'none';
+  document.getElementById('rate-error').style.display    = 'none';
+  document.getElementById('dyn-fields').innerHTML        = '';
+  document.getElementById('file-label').textContent      = '';
+  document.getElementById('e-ok').style.display          = 'none';
+  document.getElementById('e-bad').style.display         = 'none';
+  document.getElementById('err-labnum').style.display    = 'none';
+  document.getElementById('lab-section').classList.remove('hidden');
+
+  document.querySelectorAll('.qtype-card').forEach(function(c)   { c.classList.remove('selected'); });
+  document.querySelectorAll('.error-msg').forEach(function(e)    { e.style.display = 'none'; });
+  document.querySelectorAll('.field-invalid').forEach(function(f){ f.classList.remove('field-invalid'); });
+  document.getElementById('labdate').max = new Date().toISOString().split('T')[0];
+}
+
+// ── Init ───────────────────────────────────────────────
+document.getElementById('labdate').max = new Date().toISOString().split('T')[0];
+loadSettings();
+</script>
+</body>
+</html>
+
