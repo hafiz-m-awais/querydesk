@@ -594,6 +594,24 @@ let allRows       = [];
 let editingRef    = null;
 let sessionPw     = '';   // set on successful login; never persisted
 
+// ── JSONP helper (bypasses CORS on org-restricted GAS deployments) ─
+function jsonpGet(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = '__gasJp' + Date.now() + Math.random().toString(36).slice(2, 7);
+    var timer  = setTimeout(function() { cleanup(); reject(new Error('Timeout')); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    var script = document.createElement('script');
+    script.onerror = function() { cleanup(); reject(new Error('Script load failed')); };
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    document.head.appendChild(script);
+  });
+}
+
 // ── Auth ──────────────────────────────────────────────
 function doLogin() {
   var pw  = document.getElementById('pw-input').value;
@@ -609,8 +627,7 @@ function doLogin() {
   }
 
   btn.disabled = true; btn.textContent = 'Signing in…';
-  fetch(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(pw))
-    .then(function(r) { return r.json(); })
+  jsonpGet(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(pw))
     .then(function(d) {
       if (d.status === 'ok') {
         sessionPw = pw;
@@ -646,8 +663,7 @@ function loadData() {
     updateStats(); renderTable(); return;
   }
 
-  fetch(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(sessionPw))
-    .then(function(r) { return r.json(); })
+  jsonpGet(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(sessionPw))
     .then(function(d) {
       if (d.status === 'ok') {
         allRows = d.rows; updateStats(); renderTable();
@@ -822,8 +838,7 @@ function exportCSV() {
 function openSettings() {
   // Load current saved settings from script first
   if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    fetch(SCRIPT_URL + '?action=getSettings')
-      .then(function(r) { return r.json(); })
+    jsonpGet(SCRIPT_URL + '?action=getSettings')
       .then(function(d) {
         if (d.status === 'ok') applySettingsToToggles(d.settings);
       })
@@ -892,8 +907,7 @@ document.getElementById('settings-overlay').addEventListener('click', function(e
 // Load settings toggles on app init (called from doLogin)
 function loadSettings() {
   if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
-  fetch(SCRIPT_URL + '?action=getSettings')
-    .then(function(r) { return r.json(); })
+  jsonpGet(SCRIPT_URL + '?action=getSettings')
     .then(function(d) { if (d.status === 'ok') applySettingsToToggles(d.settings); })
     .catch(function() {});
 }

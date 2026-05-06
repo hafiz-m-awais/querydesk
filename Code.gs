@@ -41,36 +41,45 @@ function cors(output) {
     .setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// ── GET handler (admin data fetch) ──────────────────────────────
+// ── Unified response helper (supports JSON + JSONP) ───────────────
+function gasRespond(obj, callback) {
+  var json = JSON.stringify(obj);
+  if (callback) {
+    // JSONP: wrap in callback — bypasses CORS entirely
+    return ContentService
+      .createTextOutput(callback + '(' + json + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return cors(ContentService
+    .createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON));
+}
+
+// ── GET handler (admin data fetch + public settings) ─────────────
 function doGet(e) {
+  var cb = (e.parameter && e.parameter.callback) || '';
   try {
     var action   = (e.parameter && e.parameter.action)   || '';
     var password = (e.parameter && e.parameter.password) || '';
 
     // ── Public: return enabled query types ────────────────────────
     if (action === 'getSettings') {
-      var props = PropertiesService.getScriptProperties();
-      var raw   = props.getProperty('querySettings');
+      var props    = PropertiesService.getScriptProperties();
+      var raw      = props.getProperty('querySettings');
       var settings = raw ? JSON.parse(raw) : DEFAULT_SETTINGS;
-      return cors(ContentService
-        .createTextOutput(JSON.stringify({ status: 'ok', settings: settings }))
-        .setMimeType(ContentService.MimeType.JSON));
+      return gasRespond({ status: 'ok', settings: settings }, cb);
     }
 
     if (action === 'getData') {
       if (password !== ADMIN_PASSWORD) {
-        return cors(ContentService
-          .createTextOutput(JSON.stringify({ status: 'error', message: 'Invalid password' }))
-          .setMimeType(ContentService.MimeType.JSON));
+        return gasRespond({ status: 'error', message: 'Invalid password' }, cb);
       }
 
       var sheet = getOrCreateSheet();
       var data  = sheet.getDataRange().getValues();
 
       if (data.length <= 1) {
-        return cors(ContentService
-          .createTextOutput(JSON.stringify({ status: 'ok', rows: [] }))
-          .setMimeType(ContentService.MimeType.JSON));
+        return gasRespond({ status: 'ok', rows: [] }, cb);
       }
 
       var rows = data.slice(1).map(function(row) {
@@ -95,23 +104,15 @@ function doGet(e) {
         };
       });
 
-      // Return newest first
-      rows.reverse();
-
-      return cors(ContentService
-        .createTextOutput(JSON.stringify({ status: 'ok', rows: rows }))
-        .setMimeType(ContentService.MimeType.JSON));
+      rows.reverse(); // newest first
+      return gasRespond({ status: 'ok', rows: rows }, cb);
     }
 
     // Default — health check
-    return cors(ContentService
-      .createTextOutput(JSON.stringify({ status: 'ok', message: 'ML Lab Query API running' }))
-      .setMimeType(ContentService.MimeType.JSON));
+    return gasRespond({ status: 'ok', message: 'ML Lab Query API running' }, cb);
 
   } catch(err) {
-    return cors(ContentService
-      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON));
+    return gasRespond({ status: 'error', message: err.toString() }, cb);
   }
 }
 

@@ -327,8 +327,8 @@
       </div>
     </div>
 
-    <!-- ── § 3  Lab session (hidden for Final / Project / Assignment) ── -->
-    <div id="lab-section">
+    <!-- ── § 3  Lab session (hidden until a lab-type is selected) ── -->
+    <div id="lab-section" class="hidden">
       <div class="section-title">Lab session</div>
       <div class="lab-chip-wrap">
         <label>Lab number(s) <span class="req">*</span>
@@ -399,7 +399,7 @@
 //  CONFIGURATION
 // ════════════════════════════════════════════════════════
 const SCRIPT_URL   = 'https://script.google.com/a/macros/isb.nu.edu.pk/s/AKfycbwnwmI-rXYQ6JO-Vmx6CXOnfpzgc1yMpBLWDOIoIGO6UigY5TFqKbL2DV0JMcJ4DZmRoA/exec';
-const MAX_PER_HOUR = 3;
+const MAX_PER_HOUR = 5;
 // ════════════════════════════════════════════════════════
 
 const EMAIL_RE = /^[ik](2[0-6])\d{4}@(isb\.)?nu\.edu\.pk$/i;
@@ -941,7 +941,7 @@ function resetForm() {
   document.getElementById('e-ok').style.display          = 'none';
   document.getElementById('e-bad').style.display         = 'none';
   document.getElementById('err-labnum').style.display    = 'none';
-  document.getElementById('lab-section').classList.remove('hidden');
+  document.getElementById('lab-section').classList.add('hidden');
 
   document.getElementById('lab-detail-rows').innerHTML = '';
   document.querySelectorAll('.qtype-card').forEach(function(c)   { c.classList.remove('selected'); });
