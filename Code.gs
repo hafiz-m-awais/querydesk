@@ -70,6 +70,34 @@ function doGet(e) {
       return gasRespond({ status: 'ok', settings: settings }, cb);
     }
 
+    // ── Public: student status tracker by roll number ─────────────
+    if (action === 'getStatus') {
+      var rollNum = (e.parameter && e.parameter.rollNumber) || '';
+      if (!rollNum) {
+        return gasRespond({ status: 'error', message: 'rollNumber required' }, cb);
+      }
+      var sheet = getOrCreateSheet();
+      if (sheet.getLastRow() <= 1) {
+        return gasRespond({ status: 'ok', rows: [] }, cb);
+      }
+      var allData = sheet.getDataRange().getValues();
+      var result  = [];
+      for (var ri = 1; ri < allData.length; ri++) {
+        if (String(allData[ri][4]).trim().toUpperCase() === rollNum.trim().toUpperCase()) {
+          result.push({
+            referenceId: String(allData[ri][0]  || ''),
+            timestamp:   String(allData[ri][1]  || ''),
+            queryType:   String(allData[ri][8]  || ''),
+            labNumber:   String(allData[ri][6]  || ''),
+            status:      String(allData[ri][15] || 'Pending'),
+            notes:       String(allData[ri][16] || '')
+          });
+        }
+      }
+      result.reverse(); // newest first
+      return gasRespond({ status: 'ok', rows: result }, cb);
+    }
+
     if (action === 'getData') {
       if (password !== ADMIN_PASSWORD) {
         return gasRespond({ status: 'error', message: 'Invalid password' }, cb);

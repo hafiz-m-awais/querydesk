@@ -1,968 +1,736 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>ML for Business Analytics — Student Query Form</title>
+<title>ML for Business Analytics — Student Query</title>
 <style>
-  :root {
-    --green:       #1D9E75;
-    --green-light: #E1F5EE;
-    --green-dark:  #0F6E56;
-    --green-mid:   #5DCAA5;
-    --red:         #D85A30;
-    --red-light:   #FAECE7;
-    --gray:        #F8F8F7;
-    --border:      #e0e0dc;
-    --text:        #1a1a18;
-    --text-sec:    #5f5e5a;
-    --text-hint:   #9a9992;
-    --white:       #ffffff;
-    --radius:      8px;
-    --radius-lg:   12px;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    background: #f4f3ee;
-    color: var(--text);
-    min-height: 100vh;
-    padding: 2rem 1rem 3rem;
-  }
-
-  .page-wrap { max-width: 700px; margin: 0 auto; }
-
-  .top-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 1rem;
-  }
-  .top-bar .uni-label {
-    font-size: 12px; font-weight: 600; letter-spacing: 0.06em;
-    color: var(--text-sec); text-transform: uppercase;
-  }
-  .top-bar a { font-size: 12px; color: var(--green); text-decoration: none; }
-  .top-bar a:hover { text-decoration: underline; }
-
-  .card {
-    background: var(--white); border-radius: var(--radius-lg);
-    border: 0.5px solid var(--border); padding: 2rem; margin-bottom: 1rem;
-  }
-
-  .form-header { border-left: 3px solid var(--green); padding-left: 14px; margin-bottom: 2rem; }
-  .form-header h1 { font-size: 19px; font-weight: 700; }
-  .form-header p  { font-size: 13px; color: var(--text-sec); margin-top: 4px; }
-
-  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
-  }
-  .badge-green { background: var(--green-light); color: var(--green-dark); }
-  .badge-gray  { background: var(--gray); color: var(--text-sec); border: 0.5px solid var(--border); }
-
-  .section-title {
-    font-size: 11px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.09em; color: var(--text-sec);
-    margin: 1.5rem 0 0.8rem; padding-bottom: 7px;
-    border-bottom: 0.5px solid var(--border);
-  }
-
-  .field-row        { display: grid; gap: 14px; margin-bottom: 14px; }
-  .field-row.two    { grid-template-columns: 1fr 1fr; }
-  .field-row.three  { grid-template-columns: 1fr 1fr 1fr; }
-  .field            { display: flex; flex-direction: column; gap: 5px; }
-
-  label { font-size: 13px; color: var(--text-sec); font-weight: 500; }
-  label .req { color: var(--red); margin-left: 2px; }
-
-  input, select, textarea {
-    font-family: inherit; font-size: 14px; color: var(--text);
-    background: var(--white); border: 0.5px solid var(--border);
-    border-radius: var(--radius); padding: 9px 12px; width: 100%; outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
-  }
-  textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
-
-  .email-wrap { position: relative; }
-  .email-wrap input { padding-right: 36px; }
-  .email-icon { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; display: none; }
-
-  .hint      { font-size: 11px; color: var(--text-hint); margin-top: 2px; }
-  .error-msg { font-size: 11px; color: var(--red); margin-top: 3px; display: none; }
-
-  .field-invalid input,
-  .field-invalid select,
-  .field-invalid textarea { border-color: var(--red) !important; }
-
-  /* ── Query type cards ── */
-  .qtype-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 10px; margin-bottom: 6px;
-  }
-  .qtype-card {
-    border: 0.5px solid var(--border); border-radius: var(--radius);
-    padding: 14px 10px; cursor: pointer; text-align: center;
-    transition: all 0.15s; user-select: none;
-  }
-  .qtype-card:hover    { border-color: var(--green); background: var(--green-light); }
-  .qtype-card.selected { border: 1.5px solid var(--green); background: var(--green-light); }
-  .qtype-card svg      { display: block; margin: 0 auto 7px; }
-  .qtype-label { font-size: 13px; font-weight: 700; color: var(--text); }
-  .qtype-sub   { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
-
-  /* ── Independent type section ── */
-  .type-section {
-    background: var(--gray); border-radius: var(--radius);
-    border: 0.5px solid var(--border); padding: 16px; margin-top: 10px;
-  }
-  .type-section-hdr {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 14px;
-  }
-  .dyn-badge {
-    display: inline-flex; align-items: center;
-    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px;
-  }
-  .type-remove-btn {
-    background: none; border: 0.5px solid var(--border);
-    border-radius: var(--radius); padding: 3px 10px;
-    font-size: 12px; color: var(--text-sec); cursor: pointer;
-  }
-  .type-remove-btn:hover { background: var(--red-light); border-color: var(--red); color: var(--red); }
-
-  /* ── Lab chips ── */
-  .lab-chips {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    gap: 8px; margin: 6px 0 4px;
-  }
-  .lab-chip {
-    border: 0.5px solid var(--border); border-radius: var(--radius);
-    padding: 8px 4px; cursor: pointer; text-align: center;
-    font-size: 12px; font-weight: 600; color: var(--text-sec);
-    user-select: none; transition: all 0.13s; background: var(--white);
-  }
-  .lab-chip:hover  { border-color: var(--green); color: var(--green); }
-  .lab-chip.active { border: 1.5px solid var(--green); background: var(--green-light); color: var(--green-dark); }
-
-  /* ── Per-lab detail rows ── */
-  .lab-detail-row {
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-    padding: 10px 12px; background: var(--white);
-    border: 0.5px solid var(--border); border-radius: var(--radius); margin-top: 8px;
-  }
-  .lab-detail-label {
-    font-size: 12px; font-weight: 700; min-width: 52px;
-    padding-bottom: 9px; color: var(--text-sec); align-self: flex-end;
-  }
-  .lab-detail-row .field { flex: 1; min-width: 130px; margin-bottom: 0; }
-
-  /* ── File zone ── */
-  .file-zone {
-    border: 0.5px dashed var(--border); border-radius: var(--radius);
-    padding: 18px; text-align: center; cursor: pointer;
-    background: var(--gray); transition: border-color 0.15s;
-  }
-  .file-zone:hover  { border-color: var(--green); }
-  .file-zone p      { font-size: 13px; color: var(--text-sec); margin-top: 6px; }
-  .file-zone .f-sub { font-size: 11px; color: var(--text-hint); }
-  .file-name        { font-size: 12px; color: var(--green); margin-top: 6px; font-weight: 600; }
-
-  /* ── Submit row ── */
-  .submit-row {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 1.75rem; padding-top: 1.25rem;
-    border-top: 0.5px solid var(--border);
-  }
-  .btn-primary {
-    background: var(--green); color: #fff; border: none;
-    border-radius: var(--radius); padding: 11px 26px;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    display: flex; align-items: center; gap: 8px; transition: background 0.15s;
-  }
-  .btn-primary:hover    { background: var(--green-dark); }
-  .btn-primary:disabled { background: var(--green-mid); cursor: not-allowed; }
-  .btn-ghost {
-    background: none; border: 0.5px solid var(--border);
-    border-radius: var(--radius); padding: 11px 18px;
-    font-size: 13px; color: var(--text-sec); cursor: pointer;
-  }
-  .btn-ghost:hover { background: var(--gray); }
-
-  /* ── Success card ── */
-  .success-card {
-    display: none; background: var(--green-light);
-    border: 0.5px solid var(--green-mid);
-    border-radius: var(--radius-lg); padding: 2.5rem 2rem; text-align: center;
-  }
-  .success-card h2 { font-size: 18px; color: #085041; margin-top: 12px; }
-  .success-card p  { font-size: 14px; color: var(--green-dark); margin-top: 8px; line-height: 1.7; }
-  .success-card .s-ref { font-size: 12px; font-weight: 700; color: var(--green-dark); margin-top: 10px; letter-spacing: 0.04em; }
-
-  /* ── Errors ── */
-  .rate-error {
-    display: none; background: var(--red-light); border: 0.5px solid #F0997B;
-    border-radius: var(--radius); padding: 12px 16px;
-    font-size: 13px; color: var(--red); margin-bottom: 14px; text-align: center;
-  }
-
-  /* ── Spinner ── */
-  .spinner {
-    display: inline-block; width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
-    border-radius: 50%; animation: spin 0.6s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Honeypot ── */
-  .hp-field { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
-
-  @media (max-width: 560px) {
-    .card { padding: 1.25rem; }
-    .field-row.two   { grid-template-columns: 1fr; }
-    .field-row.three { grid-template-columns: 1fr 1fr; }
-    .qtype-grid      { grid-template-columns: 1fr 1fr; }
-    .lab-chips       { grid-template-columns: repeat(4, 1fr); }
-    .lab-detail-row  { flex-direction: column; }
-  }
+:root {
+  --g1: #1D9E75; --g2: #0F6E56; --g3: #062d21;
+  --gl: #E1F5EE; --gm: #5DCAA5;
+  --b1: #1a6fba; --b2: #0a3d62; --bl: #e6f1fb;
+  --red: #D85A30; --rl: #faece7;
+  --amb: #b96a00; --al: #fef3e2;
+  --border: #e2e1dc; --gray: #f6f5f0;
+  --text: #18181a; --ts: #5a5958; --th: #9c9992;
+  --white: #fff;
+  --r: 10px; --rl2: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,.09), 0 1px 4px rgba(0,0,0,.05);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 20% 0%, #d1ede3 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, #d6e4f5 0%, transparent 55%),
+    #f0eeea;
+  background-attachment: fixed;
+  color: var(--text);
+  padding: 2rem 1rem 4rem;
+}
+.page-wrap { max-width: 680px; margin: 0 auto; }
+.top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.top-bar .uni { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--ts); text-transform: uppercase; }
+.top-bar a { font-size: 12px; color: var(--g1); text-decoration: none; }
+.top-bar a:hover { text-decoration: underline; }
+.main-card { background: var(--white); border-radius: var(--rl2); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.25rem; }
+.card-head { background: linear-gradient(135deg, var(--g3) 0%, var(--g2) 100%); padding: 1.5rem 1.75rem 1.25rem; }
+.card-head h1 { font-size: 18px; font-weight: 700; color: #fff; }
+.card-head p  { font-size: 12px; color: rgba(255,255,255,.65); margin-top: 3px; }
+.head-badges  { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+.head-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: rgba(255,255,255,.14); color: rgba(255,255,255,.9); border: 1px solid rgba(255,255,255,.2); }
+.step-bar { display: flex; align-items: center; justify-content: center; padding: 1rem 1.75rem .75rem; border-bottom: 1px solid var(--border); }
+.step-item { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto; }
+.step-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; transition: all .25s; border: 2px solid var(--border); background: var(--white); color: var(--th); }
+.step-dot.done   { background: var(--g1); border-color: var(--g1); color: #fff; }
+.step-dot.active { background: var(--white); border-color: var(--g1); color: var(--g1); box-shadow: 0 0 0 4px rgba(29,158,117,.15); }
+.step-label { font-size: 10px; font-weight: 600; color: var(--th); letter-spacing: .05em; text-transform: uppercase; }
+.step-label.active { color: var(--g1); }
+.step-label.done   { color: var(--g2); }
+.step-line { flex: 1; height: 2px; background: var(--border); margin: 0 6px; margin-bottom: 14px; transition: background .3s; }
+.step-line.done { background: var(--g1); }
+.card-body { padding: 1.75rem; }
+.step-panel { display: none; animation: fadeSlide .22s ease; }
+.step-panel.active { display: block; }
+@keyframes fadeSlide { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.stitle { font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--ts); margin: 1.4rem 0 .7rem; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.stitle:first-child { margin-top: 0; }
+.frow { display: grid; gap: 12px; margin-bottom: 12px; }
+.frow.two   { grid-template-columns: 1fr 1fr; }
+.frow.three { grid-template-columns: 1fr 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: 13px; color: var(--ts); font-weight: 500; }
+label .req { color: var(--red); margin-left: 2px; }
+input, select, textarea { font-family: inherit; font-size: 14px; color: var(--text); background: var(--white); border: 1.5px solid var(--border); border-radius: var(--r); padding: 9px 12px; width: 100%; outline: none; transition: border-color .15s, box-shadow .15s; }
+input:focus, select:focus, textarea:focus { border-color: var(--g1); box-shadow: 0 0 0 3px rgba(29,158,117,.13); }
+textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+.hint { font-size: 11px; color: var(--th); }
+.err  { font-size: 11px; color: var(--red); display: none; margin-top: 2px; }
+.field-invalid input, .field-invalid select, .field-invalid textarea { border-color: var(--red) !important; }
+.email-wrap { position: relative; }
+.email-wrap input { padding-right: 34px; }
+.eicon { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; display: none; }
+.type-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-bottom: 6px; }
+.type-card { position: relative; border: 1.5px solid var(--border); border-radius: var(--r); padding: 13px 9px; cursor: pointer; text-align: center; transition: all .15s; user-select: none; }
+.type-card:hover    { border-color: var(--g1); background: var(--gl); }
+.type-card.selected { border-color: var(--g1); background: var(--gl); }
+.type-card svg      { display: block; margin: 0 auto 7px; }
+.type-card .tc-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.type-card .tc-sub   { font-size: 11px; color: var(--ts); margin-top: 2px; }
+.check-tick { position: absolute; top: -7px; right: -7px; width: 20px; height: 20px; border-radius: 50%; background: var(--g1); color: #fff; font-size: 11px; font-weight: 700; display: none; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+.type-card.selected .check-tick { display: flex; }
+.type-section { margin-top: 10px; border-radius: var(--r); border: 1.5px solid var(--border); overflow: hidden; animation: fadeSlide .2s ease; }
+.type-sec-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: linear-gradient(90deg,#f7f7f5,#fff); border-bottom: 1px solid var(--border); }
+.dyn-badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
+.remove-btn { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 11px; color: var(--ts); cursor: pointer; }
+.remove-btn:hover { background: var(--rl); border-color: var(--red); color: var(--red); }
+.type-sec-body { padding: 14px; background: var(--gray); }
+.lab-chips { display: grid; grid-template-columns: repeat(7,1fr); gap: 7px; margin: 6px 0 4px; }
+.lab-chip { border: 1.5px solid var(--border); border-radius: 7px; padding: 7px 3px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; color: var(--ts); user-select: none; transition: all .13s; background: var(--white); }
+.lab-chip:hover  { border-color: var(--g1); color: var(--g1); }
+.lab-chip.active { border-color: var(--g1); background: var(--gl); color: var(--g2); }
+.lrow { display: flex; flex-wrap: wrap; gap: 9px; align-items: flex-end; padding: 9px 11px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; margin-top: 7px; }
+.lrow-label { font-size: 12px; font-weight: 700; min-width: 48px; padding-bottom: 9px; color: var(--ts); align-self: flex-end; }
+.lrow .field { flex: 1; min-width: 120px; margin-bottom: 0; }
+.file-zone { border: 1.5px dashed var(--border); border-radius: var(--r); padding: 18px; text-align: center; cursor: pointer; background: var(--gray); transition: border-color .15s; }
+.file-zone:hover { border-color: var(--g1); }
+.file-zone p     { font-size: 13px; color: var(--ts); margin-top: 6px; }
+.file-sub        { font-size: 11px; color: var(--th) !important; }
+.file-name       { font-size: 12px; color: var(--g1); margin-top: 6px; font-weight: 600; }
+.review-student { background: var(--gl); border: 1.5px solid var(--gm); border-radius: var(--r); padding: 13px 16px; margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.review-student .rv-field { display: flex; flex-direction: column; gap: 1px; }
+.rv-label { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--g2); }
+.rv-val   { font-size: 14px; font-weight: 600; color: var(--text); }
+.review-qcard { border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 10px; }
+.rq-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: linear-gradient(90deg,#f7f7f5,#fff); border-bottom: 1px solid var(--border); }
+.rq-num  { font-size: 11px; color: var(--th); }
+.rq-body { padding: 13px 14px; font-size: 13px; }
+.rq-row  { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.rq-item { background: var(--gray); border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 12px; }
+.rq-item strong { font-weight: 600; color: var(--ts); margin-right: 3px; }
+.rq-desc { border-left: 3px solid var(--g1); padding-left: 11px; color: var(--ts); font-style: italic; font-size: 13px; line-height: 1.6; margin-top: 8px; }
+.review-note { font-size: 12px; color: var(--ts); text-align: center; padding: 8px; border-radius: 7px; background: var(--al); border: 1px solid #f5d9a0; margin-top: 4px; margin-bottom: 12px; }
+.nav-row { display: flex; align-items: center; justify-content: space-between; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.btn-primary { background: var(--g1); color: #fff; border: none; border-radius: var(--r); padding: 11px 24px; font-size: 14px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; transition: background .15s; }
+.btn-primary:hover    { background: var(--g2); }
+.btn-primary:disabled { background: var(--gm); cursor: not-allowed; }
+.btn-ghost { background: none; border: 1.5px solid var(--border); border-radius: var(--r); padding: 11px 18px; font-size: 13px; color: var(--ts); cursor: pointer; }
+.btn-ghost:hover { background: var(--gray); }
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: rot .6s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.hp { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
+.rate-err { display: none; background: var(--rl); border: 1px solid #f0997b; border-radius: var(--r); padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 12px; text-align: center; }
+.success-card { display: none; background: var(--white); border-radius: var(--rl2); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.25rem; }
+.suc-head { background: linear-gradient(135deg, var(--g3) 0%, var(--g2) 100%); padding: 2rem 1.75rem; text-align: center; }
+.suc-head h2 { font-size: 20px; font-weight: 700; color: #fff; margin-top: 12px; }
+.suc-head p  { font-size: 13px; color: rgba(255,255,255,.75); margin-top: 6px; line-height: 1.7; }
+.suc-body    { padding: 1.5rem 1.75rem; }
+.suc-refs    { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 12px 0; }
+.ref-pill { font-family: ui-monospace,'Cascadia Code',monospace; font-size: 12px; font-weight: 700; background: var(--gl); color: var(--g2); border: 1.5px solid var(--gm); border-radius: 99px; padding: 5px 14px; letter-spacing: .04em; }
+.suc-tracker-hint { text-align: center; font-size: 13px; color: var(--ts); background: var(--bl); border: 1px solid #b3d4f0; border-radius: var(--r); padding: 10px 14px; margin-top: 4px; }
+.suc-body .btn-primary { display: flex; margin: 16px auto 0; }
+.tracker-card { background: var(--white); border-radius: var(--rl2); box-shadow: var(--shadow); overflow: hidden; }
+.tracker-head { background: linear-gradient(135deg, var(--b2) 0%, var(--b1) 100%); padding: 1.1rem 1.75rem; display: flex; align-items: center; justify-content: space-between; }
+.tracker-head h2 { font-size: 16px; font-weight: 700; color: #fff; }
+.tracker-head p  { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 2px; }
+.tracker-body    { padding: 1.25rem 1.75rem; }
+.tracker-search  { display: flex; gap: 9px; }
+.tracker-search input { flex: 1; border-radius: var(--r); }
+.tracker-search .btn-primary { padding: 9px 18px; font-size: 13px; flex-shrink: 0; }
+.tracker-hint { font-size: 11px; color: var(--th); margin-top: 5px; }
+.tracker-err  { font-size: 12px; color: var(--red); display: none; margin-top: 5px; }
+.status-list { margin-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+.status-item { border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; animation: fadeSlide .2s ease; }
+.si-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 9px 13px; background: var(--gray); border-bottom: 1px solid var(--border); }
+.si-ref  { font-family: ui-monospace,monospace; font-size: 11px; font-weight: 700; color: var(--text); flex: 1; }
+.si-ts   { font-size: 10px; color: var(--th); margin-left: auto; }
+.si-lab  { font-size: 11px; color: var(--ts); }
+.si-body { padding: 11px 13px; }
+.status-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 99px; }
+.st-pending  { background: var(--al); color: var(--amb); border: 1px solid #f5d9a0; }
+.st-resolved { background: var(--gl); color: var(--g2); border: 1.5px solid var(--gm); }
+.st-rejected { background: var(--rl); color: var(--red); border: 1px solid #f0c0b0; }
+.st-review   { background: var(--bl); color: var(--b1); border: 1px solid #b3d4f0; }
+.instructor-note { margin-top: 9px; padding: 9px 12px; border-left: 3px solid var(--b1); background: var(--bl); border-radius: 0 7px 7px 0; font-size: 13px; color: var(--b2); line-height: 1.6; }
+.instructor-note strong { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; display: block; margin-bottom: 3px; }
+.tracker-empty { text-align: center; padding: 2rem; color: var(--th); font-size: 13px; }
+.tb-att { background: #E1F5EE; color: #0F6E56; }
+.tb-mrk { background: #FAEEDA; color: #854F0B; }
+.tb-asg { background: #E6F1FB; color: #185FA5; }
+.tb-fin { background: #F0ECFA; color: #6B3FA0; }
+.tb-prj { background: #E0F4F4; color: #0B7A75; }
+@media (max-width:560px) {
+  .card-body,.tracker-body,.suc-body{padding:1.25rem}
+  .card-head{padding:1.25rem}
+  .frow.two{grid-template-columns:1fr}
+  .frow.three{grid-template-columns:1fr 1fr}
+  .type-grid{grid-template-columns:1fr 1fr}
+  .lab-chips{grid-template-columns:repeat(4,1fr)}
+  .lrow{flex-direction:column}
+  .step-label{display:none}
+}
 </style>
 </head>
 <body>
-
 <div class="page-wrap">
-
   <div class="top-bar">
-    <span class="uni-label">FAST-NUCES · Islamabad</span>
-    <a href="admin.html">Instructor login →</a>
+    <span class="uni">FAST-NUCES &middot; Islamabad</span>
+    <a href="admin.html">Instructor login &rarr;</a>
   </div>
 
-  <div class="card" id="main-card">
-
-    <div class="form-header">
-      <h1>ML for Business Analytics — LAB</h1>
-      <p>Student Query Submission &nbsp;·&nbsp; Spring 2026</p>
-      <div class="badge-row">
-        <span class="badge badge-green">
+  <!-- MAIN FORM CARD -->
+  <div class="main-card" id="main-card">
+    <div class="card-head">
+      <h1>ML for Business Analytics &mdash; LAB</h1>
+      <p>Student Query Submission &nbsp;&middot;&nbsp; Spring 2026</p>
+      <div class="head-badges">
+        <span class="head-badge">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           NU email verified
         </span>
-        <span class="badge badge-gray">BSBA-6A &nbsp;·&nbsp; BSBA-6B &nbsp;·&nbsp; MSBA</span>
+        <span class="head-badge">BSBA-6A &middot; BSBA-6B &middot; MSBA</span>
       </div>
     </div>
 
-    <!-- Honeypot -->
-    <div class="hp-field" aria-hidden="true">
+    <div class="step-bar">
+      <div class="step-item">
+        <div class="step-dot active" id="sd1">1</div>
+        <div class="step-label active" id="sl1">Your Info</div>
+      </div>
+      <div class="step-line" id="line1"></div>
+      <div class="step-item">
+        <div class="step-dot" id="sd2">2</div>
+        <div class="step-label" id="sl2">Query Details</div>
+      </div>
+      <div class="step-line" id="line2"></div>
+      <div class="step-item">
+        <div class="step-dot" id="sd3">3</div>
+        <div class="step-label" id="sl3">Review &amp; Submit</div>
+      </div>
+    </div>
+
+    <div class="hp" aria-hidden="true">
       <input type="text" id="hp" name="website" tabindex="-1" autocomplete="off"/>
     </div>
 
-    <div class="rate-error" id="rate-error">⚠ Too many submissions. Please wait before trying again.</div>
+    <div class="card-body">
+      <div class="rate-err" id="rate-err">&#9888; Too many submissions. Please wait before trying again.</div>
 
-    <!-- § 1  Email -->
-    <div class="section-title">University email</div>
-    <div class="field-row">
-      <div class="field" id="f-email">
-        <label>NU Email <span class="req">*</span></label>
-        <div class="email-wrap">
-          <input type="email" id="email"
-                 placeholder="i231234@isb.nu.edu.pk  or  k231234@nu.edu.pk"
-                 oninput="liveEmail(this)" autocomplete="off" spellcheck="false"/>
-          <span class="email-icon" id="e-ok"  style="color:#1D9E75">✓</span>
-          <span class="email-icon" id="e-bad" style="color:#D85A30">✗</span>
+      <!-- STEP 1 -->
+      <div class="step-panel active" id="panel1">
+        <div class="stitle">University email</div>
+        <div class="frow">
+          <div class="field" id="f-email">
+            <label>NU Email <span class="req">*</span></label>
+            <div class="email-wrap">
+              <input type="email" id="email" placeholder="i231234@isb.nu.edu.pk  or  k231234@nu.edu.pk" oninput="liveEmail(this)" autocomplete="off" spellcheck="false"/>
+              <span class="eicon" id="e-ok"  style="color:#1D9E75">&#10003;</span>
+              <span class="eicon" id="e-bad" style="color:#D85A30">&#10007;</span>
+            </div>
+            <span class="hint">Prefix i or k &middot; Year 20&ndash;26 &middot; 4-digit ID &middot; @isb.nu.edu.pk or @nu.edu.pk</span>
+            <span class="err" id="err-email">Enter a valid NU email.</span>
+          </div>
         </div>
-        <span class="hint">Prefix: i or k &nbsp;·&nbsp; Year: 20–26 &nbsp;·&nbsp; 4-digit ID &nbsp;·&nbsp; @isb.nu.edu.pk or @nu.edu.pk</span>
-        <span class="error-msg" id="err-email">Enter a valid NU email (e.g. i231234@isb.nu.edu.pk).</span>
+        <div class="stitle">Student information</div>
+        <div class="frow two">
+          <div class="field" id="f-name">
+            <label>Full name <span class="req">*</span></label>
+            <input type="text" id="name" placeholder="e.g. Ali Hassan"/>
+            <span class="err" id="err-name">Please enter your full name.</span>
+          </div>
+          <div class="field" id="f-roll">
+            <label>Roll number <span class="req">*</span></label>
+            <input type="text" id="roll" placeholder="23I-1234" oninput="fmtRoll(this)" maxlength="8"/>
+            <span class="hint">Format: 23I-1234 or 23K-5678</span>
+            <span class="err" id="err-roll">Invalid format. Use 23I-1234 style.</span>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="field" id="f-section">
+            <label>Section <span class="req">*</span></label>
+            <select id="section">
+              <option value="">Select your section</option>
+              <option>BSBA-6A</option>
+              <option>BSBA-6B</option>
+              <option>MSBA</option>
+            </select>
+            <span class="err" id="err-section">Please select your section.</span>
+          </div>
+        </div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="resetForm()">&#8635; Reset</button>
+          <button class="btn-primary" onclick="goStep2()">Query Details &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step-panel" id="panel2">
+        <div class="stitle">Select query type(s) <span class="req">*</span>
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--th);margin-left:5px">Pick one or more &mdash; each is independent</span>
+        </div>
+        <div id="type-grid" class="type-grid"></div>
+        <span class="err" id="err-type">Please select at least one query type.</span>
+        <div id="type-sections"></div>
+        <div class="stitle" style="margin-top:1.5rem">Supporting document
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--th)">(optional)</span>
+        </div>
+        <div class="file-zone" onclick="document.getElementById('fileInput').click()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9a9992" stroke-width="1.8" style="margin:0 auto">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <p>Click to attach proof, screenshot, or supporting document</p>
+          <p class="file-sub">PDF &middot; JPG &middot; PNG &middot; DOCX &mdash; max 5 MB</p>
+          <p class="file-name" id="file-label"></p>
+          <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.docx" onchange="showFile(this)" style="display:none"/>
+        </div>
+        <p style="font-size:11px;color:var(--th);margin-top:5px;text-align:center">Files are <strong>not transmitted</strong>. Email supporting documents to your instructor if needed.</p>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goStep1()">&#8592; Back</button>
+          <button class="btn-primary" onclick="goStep3()">Review &amp; Confirm &rarr;</button>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step-panel" id="panel3">
+        <div class="stitle">Review your submission</div>
+        <div id="review-content"></div>
+        <div class="nav-row">
+          <button class="btn-ghost" onclick="goStep2()">&#8592; Edit</button>
+          <button class="btn-primary" id="submitBtn" onclick="doSubmit()">Submit all queries &rarr;</button>
+        </div>
       </div>
     </div>
-
-    <!-- § 2  Student info -->
-    <div class="section-title">Student information</div>
-    <div class="field-row two">
-      <div class="field" id="f-name">
-        <label>Full name <span class="req">*</span></label>
-        <input type="text" id="name" placeholder="e.g. Ali Hassan"/>
-        <span class="error-msg" id="err-name">Please enter your full name.</span>
-      </div>
-      <div class="field" id="f-roll">
-        <label>Roll number <span class="req">*</span></label>
-        <input type="text" id="roll" placeholder="23I-1234" oninput="fmtRoll(this)" maxlength="8"/>
-        <span class="hint">Format: 23I-1234 &nbsp;or&nbsp; 23K-5678</span>
-        <span class="error-msg" id="err-roll">Invalid format. Use 23I-1234 style.</span>
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field" id="f-section">
-        <label>Section <span class="req">*</span></label>
-        <select id="section">
-          <option value="">Select your section</option>
-          <option value="BSBA-6A">BSBA-6A</option>
-          <option value="BSBA-6B">BSBA-6B</option>
-          <option value="MSBA">MSBA</option>
-        </select>
-        <span class="error-msg" id="err-section">Please select your section.</span>
-      </div>
-    </div>
-
-    <!-- § 3  Query types — multi-select, each independent -->
-    <div class="section-title">
-      Query type(s) <span class="req">*</span>
-      <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint);margin-left:6px">Select one or more — each is independent</span>
-    </div>
-    <div id="qtype-grid" class="qtype-grid"></div>
-    <span class="error-msg" id="err-type">Please select at least one query type.</span>
-
-    <!-- Each selected type appends its own independent section here -->
-    <div id="type-sections"></div>
-
-    <!-- § 4  Attachment -->
-    <div class="section-title">Supporting document <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-hint)">(optional)</span></div>
-    <div class="file-zone" onclick="document.getElementById('fileInput').click()">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9a9992" stroke-width="1.8" style="margin:0 auto">
-        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      <p>Click to attach proof, screenshot, or supporting document</p>
-      <p class="f-sub">PDF · JPG · PNG · DOCX — max 5 MB</p>
-      <p class="file-name" id="file-label"></p>
-      <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png,.docx"
-             onchange="showFile(this)" style="display:none"/>
-    </div>
-    <p style="font-size:11px;color:var(--text-hint);margin-top:6px;text-align:center">
-      Note: attachments are for your reference only — files are <strong>not transmitted</strong>.
-      Email supporting documents directly to your instructor if required.
-    </p>
-
-    <div class="submit-row">
-      <button class="btn-ghost" type="button" onclick="resetForm()">↺ Reset</button>
-      <button class="btn-primary" type="button" id="submitBtn" onclick="doSubmit()">
-        Submit query →
-      </button>
-    </div>
-
-  </div><!-- /main-card -->
-
-  <!-- Success screen -->
-  <div class="success-card" id="success-card">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.6" style="margin:0 auto">
-      <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-      <polyline points="22 4 12 14.01 9 11.01"/>
-    </svg>
-    <h2>Query submitted!</h2>
-    <p id="s-msg"></p>
-    <p class="s-ref" id="s-ref"></p>
-    <button class="btn-primary" style="margin: 18px auto 0" onclick="resetForm()">Submit another query</button>
   </div>
 
-</div><!-- /page-wrap -->
+  <!-- SUCCESS CARD -->
+  <div class="success-card" id="success-card">
+    <div class="suc-head">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="1.6" style="margin:0 auto">
+        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <h2>Query submitted!</h2>
+      <p id="suc-msg"></p>
+    </div>
+    <div class="suc-body">
+      <p style="font-size:13px;font-weight:600;color:var(--ts);text-align:center;margin-bottom:6px">Reference ID(s)</p>
+      <div class="suc-refs" id="suc-refs"></div>
+      <div class="suc-tracker-hint">&#128161; Use the <strong>status tracker below</strong> to follow your query &mdash; enter your roll number to see if the instructor has responded.</div>
+      <button class="btn-primary" onclick="resetForm()">Submit another query</button>
+    </div>
+  </div>
+
+  <!-- STATUS TRACKER CARD -->
+  <div class="tracker-card">
+    <div class="tracker-head">
+      <div>
+        <h2>Track Your Query Status</h2>
+        <p>Enter your roll number to see your submissions and instructor responses</p>
+      </div>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.6">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
+    <div class="tracker-body">
+      <div class="tracker-search">
+        <input type="text" id="st-roll" placeholder="e.g. 23I-1234" oninput="fmtRoll(this)" maxlength="8" onkeydown="if(event.key==='Enter')checkStatus()"/>
+        <button class="btn-primary" onclick="checkStatus()">Check</button>
+      </div>
+      <div class="hint tracker-hint">Results are live &mdash; re-check anytime to see if your instructor has responded.</div>
+      <div class="err tracker-err" id="st-err">Please enter a valid roll number (e.g. 23I-1234).</div>
+      <div class="status-list" id="status-list"></div>
+    </div>
+  </div>
+</div>
 
 <script>
-// ═══════════════════════════════════════════════
-//  CONFIGURATION
-// ═══════════════════════════════════════════════
 var SCRIPT_URL   = 'https://script.google.com/a/macros/isb.nu.edu.pk/s/AKfycbwnwmI-rXYQ6JO-Vmx6CXOnfpzgc1yMpBLWDOIoIGO6UigY5TFqKbL2DV0JMcJ4DZmRoA/exec';
 var MAX_PER_HOUR = 5;
-// ═══════════════════════════════════════════════
-
 var EMAIL_RE = /^[ik](2[0-6])\d{4}@(isb\.)?nu\.edu\.pk$/i;
 var ROLL_RE  = /^\d{2}[IKik]-\d{4}$/;
 
-// ── State ──────────────────────────────────────
-var selectedTypes  = new Set();  // which type cards are active
-var labSelections  = {};         // typeKey → Set of selected lab strings
+var selectedTypes  = new Set();
+var labSelections  = {};
 var loadedSettings = null;
+var currentStep    = 1;
 
-// ── Type definitions ───────────────────────────
 var ALL_TYPES = {
-  attendance: {
-    label: 'Attendance', sub: 'Missed / not marked', needsLab: true,
-    badge: { bg: '#E1F5EE', color: '#0F6E56', label: 'Attendance query' },
-    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="1.5" fill="#1D9E75"/></svg>'
-  },
-  marks: {
-    label: 'Lab Marks', sub: 'Score discrepancy', needsLab: true,
-    badge: { bg: '#FAEEDA', color: '#854F0B', label: 'Lab marks query' },
-    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>'
-  },
-  assignment: {
-    label: 'Assignment', sub: 'Assignment marks', needsLab: false,
-    badge: { bg: '#E6F1FB', color: '#185FA5', label: 'Assignment query' },
-    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
-  },
-  final: {
-    label: 'Final Marks', sub: 'Final exam / theory', needsLab: false,
-    badge: { bg: '#F0ECFA', color: '#6B3FA0', label: 'Final marks query' },
-    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B3FA0" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
-  },
-  project: {
-    label: 'Project Marks', sub: 'Project / term work', needsLab: false,
-    badge: { bg: '#E0F4F4', color: '#0B7A75', label: 'Project marks query' },
-    icon: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7A75" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'
-  }
+  attendance: { label:'Attendance', sub:'Missed / not marked', needsLab:true, badgeClass:'tb-att', badge:'Attendance query', icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="1.5" fill="#1D9E75"/></svg>' },
+  marks:      { label:'Lab Marks',  sub:'Score discrepancy',  needsLab:true, badgeClass:'tb-mrk', badge:'Lab marks query', icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>' },
+  assignment: { label:'Assignment', sub:'Assignment marks',   needsLab:false,badgeClass:'tb-asg', badge:'Assignment query', icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' },
+  final:      { label:'Final Marks',sub:'Final exam / theory',needsLab:false,badgeClass:'tb-fin', badge:'Final marks query', icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6B3FA0" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
+  project:    { label:'Project Marks',sub:'Project / term work',needsLab:false,badgeClass:'tb-prj', badge:'Project marks query', icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0B7A75" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' }
 };
 
-// ── JSONP helper ───────────────────────────────
-function jsonpGet(url) {
-  return new Promise(function(resolve, reject) {
-    var cbName = '__gasJp' + Date.now() + Math.random().toString(36).slice(2, 7);
-    var script = null;
-    var timer  = setTimeout(function() { cleanup(); reject(new Error('Timeout')); }, 8000);
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[cbName];
-      if (script && script.parentNode) script.parentNode.removeChild(script);
+// STEP WIZARD
+function setStep(n) {
+  currentStep = n;
+  [1,2,3].forEach(function(i) {
+    var panel = document.getElementById('panel'+i);
+    var dot   = document.getElementById('sd'+i);
+    var lbl   = document.getElementById('sl'+i);
+    panel.classList.toggle('active', i===n);
+    dot.classList.toggle('active', i===n);
+    dot.classList.toggle('done',   i<n);
+    lbl.className = 'step-label'+(i===n?' active':i<n?' done':'');
+    dot.textContent = i<n ? '\u2713' : String(i);
+  });
+  document.getElementById('line1').classList.toggle('done', n>1);
+  document.getElementById('line2').classList.toggle('done', n>2);
+  document.querySelector('.main-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function goStep1() { setStep(1); }
+function goStep2() { if(validateStep1()) setStep(2); }
+function goStep3() { if(validateStep2()) { buildReview(); setStep(3); } }
+
+// VALIDATION
+function validateStep1() {
+  clearAllErrors();
+  var ok=true;
+  if(!EMAIL_RE.test(gv('email').trim())) { showErr('email');   ok=false; }
+  if(gv('name').trim().length<2)         { showErr('name');    ok=false; }
+  if(!ROLL_RE.test(gv('roll').trim()))   { showErr('roll');    ok=false; }
+  if(!gv('section'))                     { showErr('section'); ok=false; }
+  return ok;
+}
+function validateStep2() {
+  var ok=true;
+  if(selectedTypes.size===0) { document.getElementById('err-type').style.display='block'; ok=false; }
+  selectedTypes.forEach(function(key) {
+    var t=ALL_TYPES[key];
+    if(t.needsLab) {
+      var sel=labSelections[key]||new Set();
+      if(sel.size===0) { var e=document.getElementById('err-labnum-'+key); if(e) e.style.display='block'; ok=false; }
+      else sel.forEach(function(lab) {
+        var n=lab.replace('Lab ','');
+        var el=document.getElementById('ldate-'+key+'-'+n);
+        if(el&&!el.value) { el.style.borderColor='var(--red)'; var er=document.getElementById('err-ldate-'+key+'-'+n); if(er) er.style.display='block'; ok=false; }
+      });
     }
-    window[cbName] = function(data) { cleanup(); resolve(data); };
-    script = document.createElement('script');
-    script.onerror = function() { cleanup(); reject(new Error('Script error')); };
-    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    var desc=gv('desc-'+key).trim();
+    if(desc.length<15) { var fd=document.getElementById('f-desc-'+key); if(fd) fd.classList.add('field-invalid'); var ed=document.getElementById('err-desc-'+key); if(ed) ed.style.display='block'; ok=false; }
+  });
+  return ok;
+}
+function clearAllErrors() {
+  document.querySelectorAll('.field-invalid').forEach(function(f){f.classList.remove('field-invalid');});
+  document.querySelectorAll('.err').forEach(function(e){e.style.display='none';});
+}
+
+// REVIEW
+function buildReview() {
+  var html='';
+  html+='<div class="review-student">'+rv('Name',esc(gv('name').trim()))+rv('Roll',esc(gv('roll').trim().toUpperCase()))+rv('Section',esc(gv('section')))+rv('Email',esc(gv('email').trim().toLowerCase()))+'</div>';
+  var qIdx=0;
+  selectedTypes.forEach(function(key) {
+    qIdx++;
+    var t=ALL_TYPES[key], body='';
+    if(t.needsLab) {
+      var sel=Array.from(labSelections[key]||new Set()).sort(function(a,b){return parseInt(a.replace('Lab ',''))-parseInt(b.replace('Lab ',''));});
+      sel.forEach(function(lab) {
+        var n=lab.replace('Lab ','');
+        var date=gv('ldate-'+key+'-'+n)||'--';
+        var parts='<strong>'+esc(lab)+'</strong> &middot; '+esc(date);
+        if(key==='attendance'){var iss=gv('lissue-'+key+'-'+n);if(iss)parts+=' &middot; '+esc(iss);}
+        else if(key==='marks'){var aw=gv('lmawd-'+key+'-'+n);var ex=gv('lmexp-'+key+'-'+n);var dc=gv('lmdisc-'+key+'-'+n);if(aw)parts+=' &middot; Awarded: '+esc(aw);if(ex)parts+=' &middot; Expected: '+esc(ex);if(dc)parts+=' &middot; '+esc(dc);}
+        body+='<div class="rq-row"><div class="rq-item">'+parts+'</div></div>';
+      });
+    } else {
+      var items=[];
+      if(gv('d-assno-'+key))   items.push(rvItem('Assignment',gv('d-assno-'+key)));
+      if(gv('d-assdate-'+key)) items.push(rvItem('Submission date',gv('d-assdate-'+key)));
+      if(gv('d-findate-'+key)) items.push(rvItem('Exam date',gv('d-findate-'+key)));
+      if(gv('d-finq-'+key))    items.push(rvItem('Question',gv('d-finq-'+key)));
+      if(gv('d-projt-'+key))   items.push(rvItem('Project',gv('d-projt-'+key)));
+      if(gv('d-projdate-'+key))items.push(rvItem('Defence date',gv('d-projdate-'+key)));
+      if(gv('d-mawd-'+key))    items.push(rvItem('Marks awarded',gv('d-mawd-'+key)));
+      if(gv('d-mexp-'+key))    items.push(rvItem('Marks expected',gv('d-mexp-'+key)));
+      if(gv('d-mdisc-'+key))   items.push(rvItem('Issue',gv('d-mdisc-'+key)));
+      if(items.length) body+='<div class="rq-row">'+items.join('')+'</div>';
+    }
+    var desc=esc(gv('desc-'+key).trim());
+    if(desc) body+='<div class="rq-desc">'+desc.replace(/\n/g,'<br>')+'</div>';
+    html+='<div class="review-qcard"><div class="rq-head"><span class="dyn-badge '+t.badgeClass+'">'+t.badge+'</span><span class="rq-num">Query '+qIdx+' of '+selectedTypes.size+'</span></div><div class="rq-body">'+body+'</div></div>';
+  });
+  html+='<div class="review-note">&#9757; This is exactly what will be forwarded to your instructor.</div>';
+  document.getElementById('review-content').innerHTML=html;
+}
+function rv(label,val){ return '<div class="rv-field"><span class="rv-label">'+label+'</span><span class="rv-val">'+val+'</span></div>'; }
+function rvItem(label,val){ return '<div class="rq-item"><strong>'+esc(label)+'</strong> '+esc(val)+'</div>'; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// TYPE CARDS
+function renderQueryCards() {
+  var grid=document.getElementById('type-grid');
+  var enabled=Object.keys(ALL_TYPES).filter(function(k){return loadedSettings[k];});
+  if(enabled.length===0){grid.innerHTML='<p style="color:var(--th);font-size:13px;grid-column:1/-1;padding:12px 0">No query types currently enabled.</p>';return;}
+  var cols=enabled.length<=2?enabled.length:enabled.length<=4?2:3;
+  grid.style.gridTemplateColumns='repeat('+cols+',1fr)';
+  grid.innerHTML='';
+  enabled.forEach(function(key){
+    var t=ALL_TYPES[key];
+    var card=document.createElement('div');
+    card.className='type-card'+(selectedTypes.has(key)?' selected':'');
+    card.dataset.key=key;
+    card.innerHTML='<div class="check-tick">\u2713</div>'+t.icon+'<div class="tc-label">'+t.label+'</div><div class="tc-sub">'+t.sub+'</div>';
+    card.onclick=(function(k){return function(){toggleType(k);};})(key);
+    grid.appendChild(card);
+  });
+}
+function toggleType(key) {
+  var card=document.querySelector('.type-card[data-key="'+key+'"]');
+  if(selectedTypes.has(key)) {
+    selectedTypes.delete(key);
+    if(card) card.classList.remove('selected');
+    var sec=document.getElementById('tsec-'+key);
+    if(sec) sec.style.display='none';
+  } else {
+    selectedTypes.add(key);
+    if(card) card.classList.add('selected');
+    document.getElementById('err-type').style.display='none';
+    var sec=document.getElementById('tsec-'+key);
+    if(!sec){sec=buildTypeSection(key);document.getElementById('type-sections').appendChild(sec);}
+    else sec.style.display='';
+  }
+}
+
+// BUILD TYPE SECTION
+function buildTypeSection(key) {
+  var t=ALL_TYPES[key];
+  var today=new Date().toISOString().split('T')[0];
+  var sec=document.createElement('div');
+  sec.id='tsec-'+key; sec.className='type-section';
+  var hdr=document.createElement('div');
+  hdr.className='type-sec-head';
+  hdr.innerHTML='<span class="dyn-badge '+t.badgeClass+'">'+t.badge+'</span><button class="remove-btn" onclick="toggleType(\''+key+'\')">Remove \u2715</button>';
+  sec.appendChild(hdr);
+  var body=document.createElement('div');
+  body.className='type-sec-body';
+  if(t.needsLab) {
+    labSelections[key]=new Set();
+    var lbl=document.createElement('label');
+    lbl.innerHTML='Lab number(s) <span class="req">*</span><span style="font-weight:400;color:var(--th);margin-left:5px">(select one or more)</span>';
+    body.appendChild(lbl);
+    var grid=document.createElement('div');
+    grid.className='lab-chips'; grid.id='lchips-'+key;
+    body.appendChild(grid);
+    for(var i=1;i<=14;i++){
+      (function(n,tk){
+        var chip=document.createElement('div');
+        chip.className='lab-chip'; chip.textContent='Lab '+n; chip.dataset.lab='Lab '+n;
+        chip.onclick=function(){toggleLabForType(chip,tk);};
+        grid.appendChild(chip);
+      })(i,key);
+    }
+    var lErr=document.createElement('span');
+    lErr.className='err'; lErr.id='err-labnum-'+key; lErr.textContent='Please select at least one lab.';
+    body.appendChild(lErr);
+    var rows=document.createElement('div'); rows.id='lab-rows-'+key;
+    body.appendChild(rows);
+  } else {
+    var nf=document.createElement('div');
+    nf.innerHTML=buildNonLabHtml(key,today);
+    body.appendChild(nf);
+  }
+  var df=document.createElement('div'); df.style.marginTop='12px';
+  df.innerHTML='<div class="field" id="f-desc-'+key+'"><label>Description for this query <span class="req">*</span></label><textarea id="desc-'+key+'" placeholder="Describe the issue \u2014 what happened, relevant dates, what you expect\u2026"></textarea><span class="err" id="err-desc-'+key+'">Please write at least 15 characters.</span></div>';
+  body.appendChild(df);
+  sec.appendChild(body);
+  return sec;
+}
+function buildNonLabHtml(key,today) {
+  if(key==='assignment') return '<div class="frow two"><div class="field"><label>Assignment number / title</label><input type="text" id="d-assno-'+key+'" placeholder="e.g. Assignment 2"/></div><div class="field"><label>Submission date</label><input type="date" id="d-assdate-'+key+'" max="'+today+'"/></div></div><div class="frow three"><div class="field"><label>Marks awarded</label><input type="number" id="d-mawd-'+key+'" min="0" max="100" placeholder="14"/></div><div class="field"><label>Marks expected</label><input type="number" id="d-mexp-'+key+'" min="0" max="100" placeholder="20"/></div><div class="field"><label>Issue type</label><select id="d-mdisc-'+key+'"><option value="">Select</option><option>Not marked yet</option><option>Wrong marks entered</option><option>Penalty applied incorrectly</option><option>Partial despite complete work</option><option>Other</option></select></div></div>';
+  if(key==='final') return '<div class="frow two"><div class="field"><label>Exam date</label><input type="date" id="d-findate-'+key+'" max="'+today+'"/></div><div class="field"><label>Question / section (optional)</label><input type="text" id="d-finq-'+key+'" placeholder="e.g. Q3 Part B"/></div></div><div class="frow three"><div class="field"><label>Marks awarded</label><input type="number" id="d-mawd-'+key+'" min="0" max="100" placeholder="30"/></div><div class="field"><label>Marks expected</label><input type="number" id="d-mexp-'+key+'" min="0" max="100" placeholder="40"/></div><div class="field"><label>Discrepancy type</label><select id="d-mdisc-'+key+'"><option value="">Select</option><option>Marks not entered</option><option>Wrong marks entered</option><option>Checking mistake</option><option>Paper not returned</option><option>Other</option></select></div></div>';
+  if(key==='project') return '<div class="frow two"><div class="field"><label>Project title / phase</label><input type="text" id="d-projt-'+key+'" placeholder="e.g. Final Term Project &mdash; Phase 2"/></div><div class="field"><label>Submission / defence date</label><input type="date" id="d-projdate-'+key+'" max="'+today+'"/></div></div><div class="frow three"><div class="field"><label>Marks awarded</label><input type="number" id="d-mawd-'+key+'" min="0" max="100" placeholder="60"/></div><div class="field"><label>Marks expected</label><input type="number" id="d-mexp-'+key+'" min="0" max="100" placeholder="80"/></div><div class="field"><label>Issue type</label><select id="d-mdisc-'+key+'"><option value="">Select</option><option>Marks not entered</option><option>Wrong marks entered</option><option>Viva/presentation marks missing</option><option>Group member marks differ</option><option>Other</option></select></div></div>';
+  return '';
+}
+
+// LAB CHIPS
+function toggleLabForType(chip,typeKey) {
+  var lab=chip.dataset.lab, sel=labSelections[typeKey];
+  if(!sel) return;
+  if(sel.has(lab)){
+    sel.delete(lab); chip.classList.remove('active');
+    var row=document.getElementById('lrow-'+typeKey+'-'+lab.replace('Lab ',''));
+    if(row) row.remove();
+  } else {
+    sel.add(lab); chip.classList.add('active');
+    document.getElementById('err-labnum-'+typeKey).style.display='none';
+    insertLabDetailRow(typeKey,lab);
+  }
+}
+function insertLabDetailRow(typeKey,lab) {
+  var n=lab.replace('Lab ',''), today=new Date().toISOString().split('T')[0];
+  var container=document.getElementById('lab-rows-'+typeKey);
+  if(!container) return;
+  var row=document.createElement('div');
+  row.id='lrow-'+typeKey+'-'+n; row.className='lrow';
+  var inner='<span class="lrow-label">'+lab+'</span><div class="field"><label>Date <span class="req">*</span></label><input type="date" id="ldate-'+typeKey+'-'+n+'" max="'+today+'"/><span class="err" id="err-ldate-'+typeKey+'-'+n+'">Select date for '+lab+'.</span></div>';
+  if(typeKey==='attendance') inner+='<div class="field"><label>Issue</label><select id="lissue-'+typeKey+'-'+n+'"><option value="">Select issue</option><option>Present but not marked</option><option>Marked absent by mistake</option><option>Late entry not counted</option><option>Portal not showing attendance</option><option>Other</option></select></div>';
+  else if(typeKey==='marks') inner+='<div class="field"><label>Marks awarded</label><input type="number" id="lmawd-'+typeKey+'-'+n+'" min="0" max="100" placeholder="e.g. 7"/></div><div class="field"><label>Marks expected</label><input type="number" id="lmexp-'+typeKey+'-'+n+'" min="0" max="100" placeholder="e.g. 10"/></div><div class="field"><label>Discrepancy</label><select id="lmdisc-'+typeKey+'-'+n+'"><option value="">Select</option><option>Not entered in portal</option><option>Wrong marks entered</option><option>Partial despite complete work</option><option>Viva marks missing</option><option>Other</option></select></div>';
+  row.innerHTML=inner;
+  var existing=container.querySelectorAll('.lrow'), inserted=false;
+  for(var i=0;i<existing.length;i++){if(parseInt(existing[i].id.split('-').pop())>parseInt(n)){container.insertBefore(row,existing[i]);inserted=true;break;}}
+  if(!inserted) container.appendChild(row);
+}
+
+// SUBMIT
+function doSubmit() {
+  if(document.getElementById('hp').value) return;
+  if(!checkRate()){document.getElementById('rate-err').style.display='block';return;}
+  var btn=document.getElementById('submitBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Submitting\u2026';
+  var ts=new Date().toLocaleString('en-PK',{timeZone:'Asia/Karachi'});
+  var email=gv('email').trim().toLowerCase(), name=gv('name').trim(), roll=gv('roll').trim().toUpperCase(), section=gv('section');
+  var payloads=[], refIds=[], idx=0;
+  selectedTypes.forEach(function(key){
+    var t=ALL_TYPES[key];
+    var ref='QRY-'+(Date.now()+idx).toString(36).toUpperCase().slice(-7);
+    idx++; refIds.push(ref);
+    var labsSorted=[],labDateParts=[],labIssueParts=[],labMawdParts=[],labMexpParts=[],labMdiscParts=[];
+    var extraDate='',marksAwarded='',marksExpected='',issue='',request='';
+    if(t.needsLab){
+      var sel=labSelections[key]||new Set();
+      labsSorted=Array.from(sel).sort(function(a,b){return parseInt(a.replace('Lab ',''))-parseInt(b.replace('Lab ',''));});
+      labsSorted.forEach(function(lab){
+        var n=lab.replace('Lab ','');
+        var ld=gv('ldate-'+key+'-'+n); if(ld) labDateParts.push(lab+': '+ld);
+        if(key==='attendance'){var iss=gv('lissue-'+key+'-'+n);if(iss)labIssueParts.push(lab+': '+iss);}
+        else if(key==='marks'){var aw=gv('lmawd-'+key+'-'+n);var ex=gv('lmexp-'+key+'-'+n);var dc=gv('lmdisc-'+key+'-'+n);if(aw)labMawdParts.push(lab+': '+aw);if(ex)labMexpParts.push(lab+': '+ex);if(dc)labMdiscParts.push(lab+': '+dc);}
+      });
+      issue=key==='attendance'?labIssueParts.join(' | '):labMdiscParts.join(' | ');
+      marksAwarded=labMawdParts.join(' | '); marksExpected=labMexpParts.join(' | ');
+    } else {
+      extraDate=gv('d-assdate-'+key)||gv('d-findate-'+key)||gv('d-projdate-'+key)||'';
+      marksAwarded=gv('d-mawd-'+key)||''; marksExpected=gv('d-mexp-'+key)||'';
+      issue=gv('d-mdisc-'+key)||''; request=gv('d-assno-'+key)||gv('d-finq-'+key)||gv('d-projt-'+key)||'';
+    }
+    payloads.push({action:'submit',referenceId:ref,timestamp:ts,email:email,name:name,rollNumber:roll,section:section,labNumber:labsSorted.join(', '),labDate:labDateParts.join(' | '),queryType:key,description:gv('desc-'+key).trim(),extraDate:extraDate,marksAwarded:marksAwarded,marksExpected:marksExpected,issue:issue,request:request,status:'Pending',notes:''});
+  });
+  submitAll(payloads,0,refIds,email,name,roll,section);
+}
+function submitAll(payloads,i,refIds,email,name,roll,section){
+  if(i>=payloads.length){showSuccess(refIds,email,name,roll,section);return;}
+  fetch(SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloads[i])})
+    .then(function(){submitAll(payloads,i+1,refIds,email,name,roll,section);})
+    .catch(function(){submitAll(payloads,i+1,refIds,email,name,roll,section);});
+}
+function showSuccess(refIds,email,name,roll,section){
+  document.getElementById('main-card').style.display='none';
+  document.getElementById('success-card').style.display='block';
+  document.getElementById('suc-msg').textContent=name+' ('+roll+') \u00b7 '+section+' \u2014 query recorded to '+email;
+  document.getElementById('suc-refs').innerHTML=refIds.map(function(r){return '<span class="ref-pill">'+esc(r)+'</span>';}).join('');
+  document.getElementById('submitBtn').disabled=false;
+  document.getElementById('submitBtn').innerHTML='Submit all queries \u2192';
+  document.getElementById('st-roll').value=roll;
+  document.querySelector('.tracker-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// STATUS TRACKER
+var TYPE_BADGE={attendance:'tb-att',marks:'tb-mrk',assignment:'tb-asg',final:'tb-fin',project:'tb-prj'};
+var TYPE_LABEL={attendance:'Attendance',marks:'Lab Marks',assignment:'Assignment',final:'Final Marks',project:'Project'};
+function checkStatus(){
+  var roll=gv('st-roll').trim().toUpperCase();
+  var errEl=document.getElementById('st-err');
+  var list=document.getElementById('status-list');
+  errEl.style.display='none';
+  if(!ROLL_RE.test(roll)){errEl.style.display='block';return;}
+  list.innerHTML='<div class="tracker-empty">Checking\u2026</div>';
+  jsonpGet(SCRIPT_URL+'?action=getStatus&rollNumber='+encodeURIComponent(roll))
+    .then(function(d){
+      if(d.status==='ok') renderStatusResults(d.rows);
+      else list.innerHTML='<div class="tracker-empty">Could not load data. Please try again.</div>';
+    })
+    .catch(function(){list.innerHTML='<div class="tracker-empty">Connection error. Please try again.</div>';});
+}
+function renderStatusResults(rows){
+  var list=document.getElementById('status-list');
+  if(!rows||rows.length===0){list.innerHTML='<div class="tracker-empty">No queries found for this roll number.<br><span style="font-size:12px">Submit a query above and it will appear here.</span></div>';return;}
+  var html='';
+  rows.forEach(function(r){
+    var st=(r.status||'Pending').trim();
+    var stCls=st==='Resolved'?'st-resolved':st==='Rejected'?'st-rejected':st==='In Review'?'st-review':'st-pending';
+    var stIcon=st==='Resolved'?'\u2713':st==='Rejected'?'\u2717':st==='In Review'?'\uD83D\uDD0D':'\u23F3';
+    var typeCls=TYPE_BADGE[r.queryType]||'tb-att';
+    var typeLabel=TYPE_LABEL[r.queryType]||esc(r.queryType);
+    html+='<div class="status-item"><div class="si-head"><span class="si-ref">'+esc(r.referenceId)+'</span><span class="dyn-badge '+typeCls+'" style="font-size:10px;padding:2px 8px">'+typeLabel+'</span>'+(r.labNumber?'<span class="si-lab">'+esc(r.labNumber)+'</span>':'')+'<span class="si-ts">'+esc(r.timestamp)+'</span></div><div class="si-body"><span class="status-badge '+stCls+'">'+stIcon+' '+esc(st)+'</span>'+(r.notes?'<div class="instructor-note"><strong>Instructor comment</strong>'+esc(r.notes)+'</div>':'')+'</div></div>';
+  });
+  list.innerHTML=html;
+}
+
+// JSONP
+function jsonpGet(url){
+  return new Promise(function(resolve,reject){
+    var cbName='__gasJp'+Date.now()+Math.random().toString(36).slice(2,7);
+    var script=null;
+    var timer=setTimeout(function(){cleanup();reject(new Error('Timeout'));},8000);
+    function cleanup(){clearTimeout(timer);delete window[cbName];if(script&&script.parentNode)script.parentNode.removeChild(script);}
+    window[cbName]=function(data){cleanup();resolve(data);};
+    script=document.createElement('script');
+    script.onerror=function(){cleanup();reject(new Error('Script error'));};
+    script.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cbName;
     document.head.appendChild(script);
   });
 }
 
-// ── Load settings — show cards immediately, update in background ─
-function loadSettings() {
-  loadedSettings = { attendance:true, marks:true, assignment:true, final:true, project:true };
+// SETTINGS
+function loadSettings(){
+  loadedSettings={attendance:true,marks:true,assignment:true,final:true,project:true};
   renderQueryCards();
-
-  if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    jsonpGet(SCRIPT_URL + '?action=getSettings')
-      .then(function(d) {
-        if (d.status === 'ok') {
-          loadedSettings = d.settings;
-          renderQueryCards();
-          // Hide any type sections that got disabled
-          Object.keys(ALL_TYPES).forEach(function(k) {
-            if (!loadedSettings[k] && selectedTypes.has(k)) toggleType(k);
-          });
-        }
-      })
-      .catch(function() { /* keep defaults */ });
-  }
-}
-
-// ── Render query type cards ────────────────────
-function renderQueryCards() {
-  var grid    = document.getElementById('qtype-grid');
-  var enabled = Object.keys(ALL_TYPES).filter(function(k) { return loadedSettings[k]; });
-
-  if (enabled.length === 0) {
-    grid.innerHTML = '<p style="color:var(--text-sec);font-size:13px;grid-column:1/-1;padding:12px 0">No query types are currently enabled. Please contact the instructor.</p>';
-    return;
-  }
-
-  var cols = enabled.length <= 2 ? enabled.length : enabled.length <= 4 ? 2 : 3;
-  grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-  grid.innerHTML = '';
-
-  enabled.forEach(function(key) {
-    var t    = ALL_TYPES[key];
-    var card = document.createElement('div');
-    card.className   = 'qtype-card';
-    card.dataset.key = key;
-    if (selectedTypes.has(key)) card.classList.add('selected');
-    card.innerHTML   = t.icon +
-      '<div class="qtype-label">' + t.label + '</div>' +
-      '<div class="qtype-sub">' + t.sub + '</div>';
-    card.onclick = (function(k) { return function() { toggleType(k); }; })(key);
-    grid.appendChild(card);
-  });
-}
-
-// ── Toggle a type on/off ───────────────────────
-function toggleType(key) {
-  var card = document.querySelector('.qtype-card[data-key="' + key + '"]');
-
-  if (selectedTypes.has(key)) {
-    // Deselect: hide section (keep DOM intact — values preserved if re-selected)
-    selectedTypes.delete(key);
-    if (card) card.classList.remove('selected');
-    var sec = document.getElementById('tsec-' + key);
-    if (sec) sec.style.display = 'none';
-  } else {
-    // Select: show existing section or build new one
-    selectedTypes.add(key);
-    if (card) card.classList.add('selected');
-    document.getElementById('err-type').style.display = 'none';
-
-    var sec = document.getElementById('tsec-' + key);
-    if (!sec) {
-      sec = buildTypeSection(key);
-      document.getElementById('type-sections').appendChild(sec);
-    } else {
-      sec.style.display = '';
-    }
-  }
-}
-
-// ── Build the independent form section for a type ──
-function buildTypeSection(key) {
-  var t     = ALL_TYPES[key];
-  var today = new Date().toISOString().split('T')[0];
-  var sec   = document.createElement('div');
-  sec.id        = 'tsec-' + key;
-  sec.className = 'type-section';
-
-  // Header with badge + remove button
-  var hdr = document.createElement('div');
-  hdr.className = 'type-section-hdr';
-  hdr.innerHTML =
-    '<span class="dyn-badge" style="background:' + t.badge.bg + ';color:' + t.badge.color + '">' +
-      t.badge.label +
-    '</span>' +
-    '<button class="type-remove-btn" onclick="toggleType(\'' + key + '\')">Remove ✕</button>';
-  sec.appendChild(hdr);
-
-  if (t.needsLab) {
-    // Each lab-type gets its own completely independent lab chip grid
-    labSelections[key] = new Set();
-
-    var chipLabel = document.createElement('label');
-    chipLabel.innerHTML = 'Lab number(s) <span class="req">*</span>' +
-      '<span style="font-weight:400;color:var(--text-hint);margin-left:6px">(select one or more)</span>';
-    sec.appendChild(chipLabel);
-
-    var chipGrid = document.createElement('div');
-    chipGrid.className = 'lab-chips';
-    chipGrid.id        = 'lchips-' + key;
-    sec.appendChild(chipGrid);
-
-    for (var i = 1; i <= 14; i++) {
-      (function(n, tk) {
-        var chip = document.createElement('div');
-        chip.className   = 'lab-chip';
-        chip.textContent = 'Lab ' + n;
-        chip.dataset.lab = 'Lab ' + n;
-        chip.onclick     = function() { toggleLabForType(chip, tk); };
-        chipGrid.appendChild(chip);
-      })(i, key);
-    }
-
-    var chipErr = document.createElement('span');
-    chipErr.className   = 'error-msg';
-    chipErr.id          = 'err-labnum-' + key;
-    chipErr.textContent = 'Please select at least one lab.';
-    sec.appendChild(chipErr);
-
-    // Container where per-lab detail rows are inserted
-    var rowsWrap = document.createElement('div');
-    rowsWrap.id = 'lab-rows-' + key;
-    sec.appendChild(rowsWrap);
-
-  } else {
-    // Non-lab type: static specific fields
-    var fields = document.createElement('div');
-    fields.innerHTML = buildNonLabHtml(key, today);
-    sec.appendChild(fields);
-  }
-
-  // Description textarea — one per type, fully independent
-  var descWrap = document.createElement('div');
-  descWrap.style.marginTop = '14px';
-  descWrap.innerHTML =
-    '<div class="field" id="f-desc-' + key + '">' +
-      '<label>Description <span class="req">*</span></label>' +
-      '<textarea id="desc-' + key + '" placeholder="Describe the issue for this ' +
-        t.label.toLowerCase() + ' query — what happened, relevant dates, what you expect…"></textarea>' +
-      '<span class="error-msg" id="err-desc-' + key + '">Please write at least 15 characters.</span>' +
-    '</div>';
-  sec.appendChild(descWrap);
-
-  return sec;
-}
-
-// ── HTML for non-lab type specific fields ──────
-function buildNonLabHtml(key, today) {
-  if (key === 'assignment') {
-    return '<div class="field-row two">' +
-      '<div class="field"><label>Assignment number / title</label>' +
-        '<input type="text" id="d-assno-' + key + '" placeholder="e.g. Assignment 2"/></div>' +
-      '<div class="field"><label>Submission date</label>' +
-        '<input type="date" id="d-assdate-' + key + '" max="' + today + '"/></div>' +
-    '</div>' +
-    '<div class="field-row three">' +
-      '<div class="field"><label>Marks awarded</label>' +
-        '<input type="number" id="d-mawd-' + key + '" min="0" max="100" placeholder="e.g. 14"/></div>' +
-      '<div class="field"><label>Marks expected</label>' +
-        '<input type="number" id="d-mexp-' + key + '" min="0" max="100" placeholder="e.g. 20"/></div>' +
-      '<div class="field"><label>Issue type</label>' +
-        '<select id="d-mdisc-' + key + '"><option value="">Select</option>' +
-          '<option>Not marked yet</option><option>Wrong marks entered</option>' +
-          '<option>Penalty applied incorrectly</option><option>Partial despite complete work</option>' +
-          '<option>Other</option></select></div>' +
-    '</div>';
-  }
-  if (key === 'final') {
-    return '<div class="field-row two">' +
-      '<div class="field"><label>Exam date</label>' +
-        '<input type="date" id="d-findate-' + key + '" max="' + today + '"/></div>' +
-      '<div class="field"><label>Question / section (optional)</label>' +
-        '<input type="text" id="d-finq-' + key + '" placeholder="e.g. Q3 Part B"/></div>' +
-    '</div>' +
-    '<div class="field-row three">' +
-      '<div class="field"><label>Marks awarded</label>' +
-        '<input type="number" id="d-mawd-' + key + '" min="0" max="100" placeholder="e.g. 30"/></div>' +
-      '<div class="field"><label>Marks expected</label>' +
-        '<input type="number" id="d-mexp-' + key + '" min="0" max="100" placeholder="e.g. 40"/></div>' +
-      '<div class="field"><label>Discrepancy type</label>' +
-        '<select id="d-mdisc-' + key + '"><option value="">Select</option>' +
-          '<option>Marks not entered</option><option>Wrong marks entered</option>' +
-          '<option>Checking mistake</option><option>Paper not returned</option>' +
-          '<option>Other</option></select></div>' +
-    '</div>';
-  }
-  if (key === 'project') {
-    return '<div class="field-row two">' +
-      '<div class="field"><label>Project title / phase</label>' +
-        '<input type="text" id="d-projt-' + key + '" placeholder="e.g. Final Term Project — Phase 2"/></div>' +
-      '<div class="field"><label>Submission / defence date</label>' +
-        '<input type="date" id="d-projdate-' + key + '" max="' + today + '"/></div>' +
-    '</div>' +
-    '<div class="field-row three">' +
-      '<div class="field"><label>Marks awarded</label>' +
-        '<input type="number" id="d-mawd-' + key + '" min="0" max="100" placeholder="e.g. 60"/></div>' +
-      '<div class="field"><label>Marks expected</label>' +
-        '<input type="number" id="d-mexp-' + key + '" min="0" max="100" placeholder="e.g. 80"/></div>' +
-      '<div class="field"><label>Issue type</label>' +
-        '<select id="d-mdisc-' + key + '"><option value="">Select</option>' +
-          '<option>Marks not entered</option><option>Wrong marks entered</option>' +
-          '<option>Viva/presentation marks missing</option>' +
-          '<option>Group member marks differ</option><option>Other</option></select></div>' +
-    '</div>';
-  }
-  return '';
-}
-
-// ── Toggle a lab chip for a specific type ──────
-function toggleLabForType(chip, typeKey) {
-  var lab = chip.dataset.lab;
-  var sel = labSelections[typeKey];
-  if (!sel) return;
-
-  if (sel.has(lab)) {
-    sel.delete(lab);
-    chip.classList.remove('active');
-    var n   = lab.replace('Lab ', '');
-    var row = document.getElementById('lrow-' + typeKey + '-' + n);
-    if (row) row.remove();
-  } else {
-    sel.add(lab);
-    chip.classList.add('active');
-    document.getElementById('err-labnum-' + typeKey).style.display = 'none';
-    insertLabDetailRow(typeKey, lab);
-  }
-}
-
-// ── Insert a per-lab detail row in sorted order ─
-function insertLabDetailRow(typeKey, lab) {
-  var n         = lab.replace('Lab ', '');
-  var today     = new Date().toISOString().split('T')[0];
-  var container = document.getElementById('lab-rows-' + typeKey);
-  if (!container) return;
-
-  var row       = document.createElement('div');
-  row.id        = 'lrow-' + typeKey + '-' + n;
-  row.className = 'lab-detail-row';
-
-  var inner =
-    '<span class="lab-detail-label">' + lab + '</span>' +
-    '<div class="field">' +
-      '<label>Date <span class="req">*</span></label>' +
-      '<input type="date" id="ldate-' + typeKey + '-' + n + '" max="' + today + '"/>' +
-      '<span class="error-msg" id="err-ldate-' + typeKey + '-' + n + '">Select a date for ' + lab + '.</span>' +
-    '</div>';
-
-  if (typeKey === 'attendance') {
-    inner +=
-      '<div class="field"><label>Issue</label>' +
-        '<select id="lissue-' + typeKey + '-' + n + '">' +
-          '<option value="">Select issue</option>' +
-          '<option>Present but not marked</option>' +
-          '<option>Marked absent by mistake</option>' +
-          '<option>Late entry not counted</option>' +
-          '<option>Portal not showing attendance</option>' +
-          '<option>Other</option>' +
-        '</select>' +
-      '</div>';
-  } else if (typeKey === 'marks') {
-    inner +=
-      '<div class="field"><label>Marks awarded</label>' +
-        '<input type="number" id="lmawd-' + typeKey + '-' + n + '" min="0" max="100" placeholder="e.g. 7"/>' +
-      '</div>' +
-      '<div class="field"><label>Marks expected</label>' +
-        '<input type="number" id="lmexp-' + typeKey + '-' + n + '" min="0" max="100" placeholder="e.g. 10"/>' +
-      '</div>' +
-      '<div class="field"><label>Discrepancy</label>' +
-        '<select id="lmdisc-' + typeKey + '-' + n + '">' +
-          '<option value="">Select</option>' +
-          '<option>Not entered in portal</option>' +
-          '<option>Wrong marks entered</option>' +
-          '<option>Partial despite complete work</option>' +
-          '<option>Viva marks missing</option>' +
-          '<option>Other</option>' +
-        '</select>' +
-      '</div>';
-  }
-
-  row.innerHTML = inner;
-
-  // Insert in sorted numeric order among existing rows
-  var existing = container.querySelectorAll('.lab-detail-row');
-  var inserted = false;
-  for (var i = 0; i < existing.length; i++) {
-    var existN = parseInt(existing[i].id.split('-').pop());
-    if (parseInt(n) < existN) {
-      container.insertBefore(row, existing[i]);
-      inserted = true;
-      break;
-    }
-  }
-  if (!inserted) container.appendChild(row);
-}
-
-// ── Helpers ────────────────────────────────────
-function gv(id) { var e = document.getElementById(id); return e ? e.value : ''; }
-
-function liveEmail(el) {
-  var v = el.value.trim(), ok = EMAIL_RE.test(v);
-  document.getElementById('e-ok').style.display  = (v && ok)  ? 'inline' : 'none';
-  document.getElementById('e-bad').style.display = (v && !ok) ? 'inline' : 'none';
-  if (ok) clearErr('email');
-}
-
-function fmtRoll(el) {
-  var v = el.value.toUpperCase().replace(/[^0-9IK\-]/g, '');
-  if (v.length >= 3 && !v.includes('-')) v = v.slice(0, 2) + v[2] + '-' + v.slice(3);
-  el.value = v;
-}
-
-function showFile(input) {
-  document.getElementById('file-label').textContent =
-    input.files[0] ? '📎 ' + input.files[0].name : '';
-}
-
-function showErr(id) {
-  var f = document.getElementById('f-' + id);
-  if (f) f.classList.add('field-invalid');
-  var e = document.getElementById('err-' + id);
-  if (e) e.style.display = 'block';
-}
-function clearErr(id) {
-  var f = document.getElementById('f-' + id);
-  if (f) f.classList.remove('field-invalid');
-  var e = document.getElementById('err-' + id);
-  if (e) e.style.display = 'none';
-}
-
-function checkRate() {
-  var key   = 'mllab_v2', now = Date.now();
-  var times = JSON.parse(localStorage.getItem(key) || '[]').filter(function(t) { return now - t < 3600000; });
-  if (times.length >= MAX_PER_HOUR) return false;
-  times.push(now);
-  localStorage.setItem(key, JSON.stringify(times));
-  return true;
-}
-
-// ── Validation ────────────────────────────────
-function validate() {
-  var ok = true;
-  document.querySelectorAll('.field-invalid').forEach(function(f) { f.classList.remove('field-invalid'); });
-  document.querySelectorAll('.error-msg').forEach(function(e) { e.style.display = 'none'; });
-
-  if (!EMAIL_RE.test(gv('email').trim())) { showErr('email');   ok = false; }
-  if (gv('name').trim().length < 2)       { showErr('name');    ok = false; }
-  if (!ROLL_RE.test(gv('roll').trim()))   { showErr('roll');    ok = false; }
-  if (!gv('section'))                     { showErr('section'); ok = false; }
-
-  if (selectedTypes.size === 0) {
-    document.getElementById('err-type').style.display = 'block'; ok = false;
-  }
-
-  selectedTypes.forEach(function(key) {
-    var t = ALL_TYPES[key];
-
-    if (t.needsLab) {
-      var sel = labSelections[key] || new Set();
-      if (sel.size === 0) {
-        var labErr = document.getElementById('err-labnum-' + key);
-        if (labErr) labErr.style.display = 'block';
-        ok = false;
-      } else {
-        sel.forEach(function(lab) {
-          var n = lab.replace('Lab ', '');
-          var dateEl = document.getElementById('ldate-' + key + '-' + n);
-          if (dateEl && !dateEl.value) {
-            dateEl.style.borderColor = 'var(--red)';
-            var errEl = document.getElementById('err-ldate-' + key + '-' + n);
-            if (errEl) errEl.style.display = 'block';
-            ok = false;
-          }
-        });
+  jsonpGet(SCRIPT_URL+'?action=getSettings')
+    .then(function(d){
+      if(d.status==='ok'){
+        loadedSettings=d.settings; renderQueryCards();
+        Object.keys(ALL_TYPES).forEach(function(k){if(!loadedSettings[k]&&selectedTypes.has(k))toggleType(k);});
       }
-    }
-
-    if (gv('desc-' + key).trim().length < 15) {
-      showErr('desc-' + key); ok = false;
-    }
-  });
-
-  return ok;
+    })
+    .catch(function(){});
 }
 
-// ── Submit ─────────────────────────────────────
-function doSubmit() {
-  if (document.getElementById('hp').value) return;
-  if (!validate()) {
-    var first = document.querySelector('.field-invalid input, .field-invalid select, .field-invalid textarea');
-    if (first) first.focus();
-    return;
-  }
-  if (!checkRate()) {
-    document.getElementById('rate-error').style.display = 'block'; return;
-  }
-
-  var btn = document.getElementById('submitBtn');
-  btn.disabled  = true;
-  btn.innerHTML = '<span class="spinner"></span> Submitting…';
-
-  var ts      = new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' });
-  var email   = gv('email').trim().toLowerCase();
-  var name    = gv('name').trim();
-  var roll    = gv('roll').trim().toUpperCase();
-  var section = gv('section');
-
-  var payloads = [];
-  var refIds   = [];
-  var idx      = 0;
-
-  selectedTypes.forEach(function(key) {
-    var t   = ALL_TYPES[key];
-    var ref = 'QRY-' + (Date.now() + idx).toString(36).toUpperCase().slice(-7);
-    idx++;
-    refIds.push(ref);
-
-    var labsSorted    = [];
-    var labDateParts  = [], labIssueParts = [];
-    var labMawdParts  = [], labMexpParts  = [], labMdiscParts = [];
-    var extraDate     = '', marksAwarded  = '', marksExpected = '', issue = '', request = '';
-
-    if (t.needsLab) {
-      var sel = labSelections[key] || new Set();
-      labsSorted = Array.from(sel).sort(function(a, b) {
-        return parseInt(a.replace('Lab ', '')) - parseInt(b.replace('Lab ', ''));
-      });
-      labsSorted.forEach(function(lab) {
-        var n = lab.replace('Lab ', '');
-        var ld = gv('ldate-' + key + '-' + n);
-        if (ld) labDateParts.push(lab + ': ' + ld);
-        if (key === 'attendance') {
-          var iss = gv('lissue-' + key + '-' + n);
-          if (iss) labIssueParts.push(lab + ': ' + iss);
-        } else if (key === 'marks') {
-          var aw = gv('lmawd-' + key + '-' + n);
-          var ex = gv('lmexp-' + key + '-' + n);
-          var dc = gv('lmdisc-' + key + '-' + n);
-          if (aw) labMawdParts.push(lab + ': ' + aw);
-          if (ex) labMexpParts.push(lab + ': ' + ex);
-          if (dc) labMdiscParts.push(lab + ': ' + dc);
-        }
-      });
-      issue         = key === 'attendance' ? labIssueParts.join(' | ') : labMdiscParts.join(' | ');
-      marksAwarded  = labMawdParts.join(' | ');
-      marksExpected = labMexpParts.join(' | ');
-    } else {
-      extraDate     = gv('d-assdate-' + key) || gv('d-findate-' + key) || gv('d-projdate-' + key) || '';
-      marksAwarded  = gv('d-mawd-' + key)  || '';
-      marksExpected = gv('d-mexp-' + key)  || '';
-      issue         = gv('d-mdisc-' + key) || '';
-      request       = gv('d-assno-' + key) || gv('d-finq-' + key) || gv('d-projt-' + key) || '';
-    }
-
-    payloads.push({
-      action:        'submit',
-      referenceId:   ref,
-      timestamp:     ts,
-      email:         email,
-      name:          name,
-      rollNumber:    roll,
-      section:       section,
-      labNumber:     labsSorted.join(', '),
-      labDate:       labDateParts.join(' | '),
-      queryType:     key,
-      description:   gv('desc-' + key).trim(),
-      extraDate:     extraDate,
-      marksAwarded:  marksAwarded,
-      marksExpected: marksExpected,
-      issue:         issue,
-      request:       request,
-      status:        'Pending',
-      notes:         ''
-    });
-  });
-
-  submitAll(payloads, 0, refIds, email, name, roll, section);
+// HELPERS
+function gv(id){var e=document.getElementById(id);return e?e.value:'';}
+function liveEmail(el){
+  var v=el.value.trim(),ok=EMAIL_RE.test(v);
+  document.getElementById('e-ok').style.display=(v&&ok)?'inline':'none';
+  document.getElementById('e-bad').style.display=(v&&!ok)?'inline':'none';
+  if(ok){var e=document.getElementById('err-email');if(e)e.style.display='none';var f=document.getElementById('f-email');if(f)f.classList.remove('field-invalid');}
+}
+function fmtRoll(el){
+  var v=el.value.toUpperCase().replace(/[^0-9IK\-]/g,'');
+  if(v.length>=3&&!v.includes('-'))v=v.slice(0,2)+v[2]+'-'+v.slice(3);
+  el.value=v;
+}
+function showFile(input){document.getElementById('file-label').textContent=input.files[0]?'\uD83D\uDCCE '+input.files[0].name:'';}
+function showErr(id){var f=document.getElementById('f-'+id);if(f)f.classList.add('field-invalid');var e=document.getElementById('err-'+id);if(e)e.style.display='block';}
+function checkRate(){
+  var key='mllab_v2',now=Date.now();
+  var times=JSON.parse(localStorage.getItem(key)||'[]').filter(function(t){return now-t<3600000;});
+  if(times.length>=MAX_PER_HOUR) return false;
+  times.push(now);localStorage.setItem(key,JSON.stringify(times));return true;
+}
+function resetForm(){
+  selectedTypes.clear(); labSelections={};
+  setStep(1);
+  var mc=document.getElementById('main-card');
+  mc.querySelectorAll('input:not([type=file]),select,textarea').forEach(function(e){e.value='';});
+  mc.style.display='block';
+  document.getElementById('success-card').style.display='none';
+  document.getElementById('rate-err').style.display='none';
+  document.getElementById('type-sections').innerHTML='';
+  document.getElementById('review-content').innerHTML='';
+  document.getElementById('file-label').textContent='';
+  document.getElementById('e-ok').style.display='none';
+  document.getElementById('e-bad').style.display='none';
+  document.getElementById('err-type').style.display='none';
+  document.getElementById('status-list').innerHTML='';
+  document.getElementById('st-err').style.display='none';
+  document.getElementById('st-roll').value='';
+  document.querySelectorAll('.type-card').forEach(function(c){c.classList.remove('selected');});
+  document.querySelectorAll('.field-invalid').forEach(function(f){f.classList.remove('field-invalid');});
 }
 
-function submitAll(payloads, i, refIds, email, name, roll, section) {
-  if (i >= payloads.length) {
-    showSuccess(refIds, email, name, roll, section);
-    return;
-  }
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    console.log('Demo payload:', payloads[i]);
-    setTimeout(function() { submitAll(payloads, i + 1, refIds, email, name, roll, section); }, 400);
-    return;
-  }
-  fetch(SCRIPT_URL, {
-    method:  'POST',
-    mode:    'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(payloads[i])
-  })
-  .then(function()  { submitAll(payloads, i + 1, refIds, email, name, roll, section); })
-  .catch(function() { submitAll(payloads, i + 1, refIds, email, name, roll, section); });
-}
-
-function showSuccess(refIds, email, name, roll, section) {
-  document.getElementById('main-card').style.display    = 'none';
-  document.getElementById('success-card').style.display = 'block';
-  document.getElementById('s-msg').textContent =
-    (refIds.length > 1 ? refIds.length + ' queries' : 'Your query') +
-    ' recorded for ' + name + ' (' + roll + '), ' + section + '. ' +
-    'The instructor will review and respond to ' + email + '.';
-  document.getElementById('s-ref').textContent =
-    'Reference' + (refIds.length > 1 ? 's' : '') + ': ' + refIds.join(', ');
-  var btn = document.getElementById('submitBtn');
-  btn.disabled  = false;
-  btn.innerHTML = 'Submit query →';
-}
-
-// ── Reset ──────────────────────────────────────
-function resetForm() {
-  selectedTypes.clear();
-  labSelections = {};
-
-  var mc = document.getElementById('main-card');
-  mc.querySelectorAll('input:not([type=file]), select, textarea').forEach(function(e) { e.value = ''; });
-  mc.style.display = 'block';
-
-  document.getElementById('success-card').style.display  = 'none';
-  document.getElementById('rate-error').style.display    = 'none';
-  document.getElementById('type-sections').innerHTML     = '';
-  document.getElementById('file-label').textContent      = '';
-  document.getElementById('e-ok').style.display          = 'none';
-  document.getElementById('e-bad').style.display         = 'none';
-  document.getElementById('err-type').style.display      = 'none';
-
-  document.querySelectorAll('.qtype-card').forEach(function(c)    { c.classList.remove('selected'); });
-  document.querySelectorAll('.error-msg').forEach(function(e)     { e.style.display = 'none'; });
-  document.querySelectorAll('.field-invalid').forEach(function(f) { f.classList.remove('field-invalid'); });
-}
-
-// ── Init ───────────────────────────────────────
 loadSettings();
 </script>
 </body>
