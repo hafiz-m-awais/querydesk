@@ -578,9 +578,8 @@
 //  CONFIGURATION — must match Code.gs
 // ════════════════════════════════════════════════════════
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbxXHOUZEb1oJXVk6Po6pYWTF-5o_2xUPSagZ6ClHw8TqHxOS121yTB5qGxzX7N7xwTqnA/exec';
-// Password must match the ADMIN_PASSWORD Script Property set in GAS.
-// Source of truth: .env file (never commit .env to version control).
-const ADMIN_PASSWORD = '@wA!$231347';
+// Password is never stored in source code.
+// It is verified server-side by GAS against the ADMIN_PASSWORD Script Property.
 // ════════════════════════════════════════════════════════
 
 const TYPE_LABELS = {
@@ -591,24 +590,51 @@ const TYPE_LABELS = {
   project:    'Project Marks'
 };
 
-let allRows    = [];
-let editingRef = null;
+let allRows       = [];
+let editingRef    = null;
+let sessionPw     = '';   // set on successful login; never persisted
 
 // ── Auth ──────────────────────────────────────────────
 function doLogin() {
-  var pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PASSWORD) {
+  var pw  = document.getElementById('pw-input').value;
+  var btn = document.querySelector('.login-card .btn-primary');
+  if (!pw) return;
+
+  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+    // Demo mode — accept any non-empty password
+    sessionPw = pw;
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    loadSettings();
-    loadData();
-  } else {
-    document.getElementById('login-err').style.display = 'block';
-    document.getElementById('pw-input').value = '';
-    document.getElementById('pw-input').focus();
+    loadSettings(); loadData(); return;
   }
+
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  fetch(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(pw))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.status === 'ok') {
+        sessionPw = pw;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        allRows = d.rows; updateStats(); renderTable();
+        var now = new Date().toLocaleTimeString('en-PK', { timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit' });
+        var di = document.getElementById('data-info');
+        if (di) di.textContent = allRows.length + (allRows.length === 1 ? ' query' : ' queries') + ' · refreshed ' + now;
+        loadSettings();
+      } else {
+        document.getElementById('login-err').style.display = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+        btn.disabled = false; btn.textContent = 'Sign in';
+      }
+    })
+    .catch(function() {
+      document.getElementById('login-err').textContent = 'Network error. Try again.';
+      document.getElementById('login-err').style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Sign in';
+    });
 }
-function doLogout() { location.reload(); }
+function doLogout() { sessionPw = ''; location.reload(); }
 
 // ── Load data from Apps Script ─────────────────────────
 function loadData() {
@@ -620,7 +646,7 @@ function loadData() {
     updateStats(); renderTable(); return;
   }
 
-  fetch(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(ADMIN_PASSWORD))
+  fetch(SCRIPT_URL + '?action=getData&password=' + encodeURIComponent(sessionPw))
     .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.status === 'ok') {
@@ -743,7 +769,7 @@ function saveStatus() {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'updateStatus', password: ADMIN_PASSWORD,
+        action: 'updateStatus', password: sessionPw,
         referenceId: editingRef, status: newStatus, notes: notes
       })
     }).then(function() {}).catch(function() {});
@@ -763,7 +789,7 @@ function deleteQuery() {
     fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'deleteRow', password: ADMIN_PASSWORD, referenceId: refId })
+      body: JSON.stringify({ action: 'deleteRow', password: sessionPw, referenceId: refId })
     }).then(function() {}).catch(function() {});
   }
 
@@ -831,7 +857,7 @@ function saveSettings() {
     fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'saveSettings', password: ADMIN_PASSWORD, settings: settings })
+      body: JSON.stringify({ action: 'saveSettings', password: sessionPw, settings: settings })
     }).then(function() {}).catch(function() {});
   }
 

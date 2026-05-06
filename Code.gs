@@ -10,7 +10,9 @@
 //   Apps Script editor → Project Settings → Script Properties
 //   Key: ADMIN_PASSWORD   Value: (your password, same as in admin.html)
 // The hardcoded fallback below is only used if the property is not set.
-var ADMIN_PASSWORD = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD') || '@wA!$231347';
+// ADMIN_PASSWORD must be set in Apps Script editor → Project Settings → Script Properties
+// Key: ADMIN_PASSWORD   Value: (your chosen password)
+var ADMIN_PASSWORD = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD') || '';
 var SHEET_NAME     = 'Queries';                    // tab name in your spreadsheet
 // ─────────────────────────────────────────────────────────────────
 
