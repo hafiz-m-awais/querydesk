@@ -408,6 +408,7 @@ const ROLL_RE  = /^\d{2}[IKik]-\d{4}$/;
 let selectedType   = '';
 let selectedLabs   = new Set();
 let loadedSettings = null;
+let labInputCache  = {};  // persists all per-lab input values across type switches
 
 // ── All query type definitions ─────────────────────────
 const ALL_TYPES = {
@@ -650,10 +651,9 @@ function rebuildLabDetailRows() {
   var container = document.getElementById('lab-detail-rows');
   if (!container) return;
 
-  // Snapshot existing dates so they survive the DOM rebuild
-  var savedDates = {};
-  container.querySelectorAll('.lab-date-input').forEach(function(el) {
-    if (el.value) savedDates[el.id] = el.value;
+  // Snapshot ALL per-lab inputs into the persistent cache before wiping DOM
+  container.querySelectorAll('input, select').forEach(function(el) {
+    if (el.id) labInputCache[el.id] = el.value;
   });
 
   container.innerHTML = '';
@@ -663,10 +663,27 @@ function rebuildLabDetailRows() {
   });
   sorted.forEach(function(lab) { container.appendChild(buildLabDetailRow(lab)); });
 
-  // Restore dates into the freshly built inputs
-  Object.keys(savedDates).forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.value = savedDates[id];
+  // Restore all previously entered values from cache
+  container.querySelectorAll('input, select').forEach(function(el) {
+    if (el.id && labInputCache[el.id] !== undefined) el.value = labInputCache[el.id];
+  });
+}
+
+// ── JSONP helper (same as admin — bypasses org-CORS on GAS) ───
+function jsonpGet(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = '__gasJp' + Date.now() + Math.random().toString(36).slice(2, 7);
+    var timer  = setTimeout(function() { cleanup(); reject(new Error('Timeout')); }, 10000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    var script = document.createElement('script');
+    script.onerror = function() { cleanup(); reject(new Error('Script load failed')); };
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    document.head.appendChild(script);
   });
 }
 
@@ -675,23 +692,23 @@ function loadSettings() {
   const notice = document.getElementById('settings-notice');
   notice.style.display = 'block';
 
+  var fallback = { attendance:true, marks:true, assignment:true, final:true, project:true };
+
   if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    loadedSettings = { attendance:true, marks:true, assignment:true, final:true, project:true };
+    loadedSettings = fallback;
     notice.style.display = 'none';
     renderQueryCards();
     return;
   }
 
-  fetch(SCRIPT_URL + '?action=getSettings')
-    .then(r => r.json())
-    .then(d => {
-      loadedSettings = (d.status === 'ok') ? d.settings
-        : { attendance:true, marks:true, assignment:true, final:true, project:true };
+  jsonpGet(SCRIPT_URL + '?action=getSettings')
+    .then(function(d) {
+      loadedSettings = (d.status === 'ok') ? d.settings : fallback;
       notice.style.display = 'none';
       renderQueryCards();
     })
-    .catch(() => {
-      loadedSettings = { attendance:true, marks:true, assignment:true, final:true, project:true };
+    .catch(function() {
+      loadedSettings = fallback;
       notice.style.display = 'none';
       renderQueryCards();
     });
@@ -955,6 +972,7 @@ function resetForm() {
   document.getElementById('e-bad').style.display         = 'none';
   document.getElementById('err-labnum').style.display    = 'none';
   document.getElementById('lab-section').classList.add('hidden');
+  labInputCache = {};
 
   document.getElementById('lab-detail-rows').innerHTML = '';
   document.querySelectorAll('.qtype-card').forEach(function(c)   { c.classList.remove('selected'); });

@@ -125,6 +125,31 @@ function doPost(e) {
     // ── New query submission ────────────────────────────────────
     if (action === 'submit') {
       var sheet = getOrCreateSheet();
+
+      // Duplicate guard: same roll number + query type + lab(s) within 24 hours
+      if (sheet.getLastRow() > 1) {
+        var recent = sheet.getRange(2, 1, sheet.getLastRow() - 1, 10).getValues();
+        var cutoff = Date.now() - 86400000;
+        for (var d = 0; d < recent.length; d++) {
+          var rowRoll = recent[d][4];  // col E: rollNumber
+          var rowType = recent[d][8];  // col I: queryType
+          var rowLab  = recent[d][6];  // col G: labNumber
+          var rowTs   = recent[d][1];  // col B: timestamp (string)
+          var rowTime = new Date(rowTs).getTime();
+          if (!isNaN(rowTime) && rowTime > cutoff &&
+              rowRoll === (data.rollNumber || '') &&
+              rowType === (data.queryType  || '') &&
+              rowLab  === (data.labNumber  || '')) {
+            return cors(ContentService
+              .createTextOutput(JSON.stringify({
+                status:  'duplicate',
+                message: 'A query of this type for the same lab was already submitted today.'
+              }))
+              .setMimeType(ContentService.MimeType.JSON));
+          }
+        }
+      }
+
       sheet.appendRow([
         data.referenceId   || '',
         data.timestamp     || new Date().toLocaleString(),
