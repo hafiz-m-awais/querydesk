@@ -649,12 +649,25 @@ function buildLabDetailRow(lab) {
 function rebuildLabDetailRows() {
   var container = document.getElementById('lab-detail-rows');
   if (!container) return;
+
+  // Snapshot existing dates so they survive the DOM rebuild
+  var savedDates = {};
+  container.querySelectorAll('.lab-date-input').forEach(function(el) {
+    if (el.value) savedDates[el.id] = el.value;
+  });
+
   container.innerHTML = '';
   if (!selectedType || !ALL_TYPES[selectedType] || !ALL_TYPES[selectedType].needsLab) return;
   var sorted = Array.from(selectedLabs).sort(function(a, b) {
     return parseInt(a.replace('Lab ', '')) - parseInt(b.replace('Lab ', ''));
   });
   sorted.forEach(function(lab) { container.appendChild(buildLabDetailRow(lab)); });
+
+  // Restore dates into the freshly built inputs
+  Object.keys(savedDates).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.value = savedDates[id];
+  });
 }
 
 // ── Load settings from Apps Script & render query cards ─
