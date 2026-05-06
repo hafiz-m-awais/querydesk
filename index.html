@@ -223,12 +223,26 @@
   /* ── Honeypot ── */
   .hp-field { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
 
+  /* ── Per-lab detail rows ── */
+  .lab-detail-row {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    padding: 10px 12px; background: var(--white);
+    border: 0.5px solid var(--border); border-radius: var(--radius); margin-top: 8px;
+  }
+  .lab-detail-label {
+    font-size: 12px; font-weight: 700; min-width: 52px;
+    padding-bottom: 9px; color: var(--text-sec); align-self: flex-end;
+  }
+  .lab-detail-row .field { flex: 1; min-width: 130px; margin-bottom: 0; }
+  .ldate-invalid { border-color: var(--red) !important; }
+
   @media (max-width: 560px) {
     .card { padding: 1.25rem; }
     .field-row.two   { grid-template-columns: 1fr; }
     .field-row.three { grid-template-columns: 1fr 1fr; }
     .qtype-grid      { grid-template-columns: 1fr 1fr; }
     .lab-chips       { grid-template-columns: repeat(4, 1fr); }
+    .lab-detail-row  { flex-direction: column; }
   }
 </style>
 </head>
@@ -323,14 +337,7 @@
         <div class="lab-chips" id="lab-chips"></div>
         <span class="error-msg" id="err-labnum">Please select at least one lab.</span>
       </div>
-      <div class="field-row" style="margin-top:12px">
-        <div class="field" id="f-labdate">
-          <label>Lab date <span class="req">*</span></label>
-          <input type="date" id="labdate"/>
-          <span class="hint">For multiple labs, enter the date of the earliest selected lab.</span>
-          <span class="error-msg" id="err-labdate">Please select the lab date.</span>
-        </div>
-      </div>
+      <div id="lab-detail-rows"></div>
     </div>
 
     <!-- ── § 4  Query type ── -->
@@ -415,25 +422,7 @@ const ALL_TYPES = {
       <line x1="3" y1="10" x2="21" y2="10"/>
       <circle cx="12" cy="16" r="1.5" fill="#1D9E75"/>
     </svg>`,
-    dynHtml: `
-      <div class="field-row two">
-        <div class="field" id="f-adate">
-          <label>Attendance date <span class="req">*</span></label>
-          <input type="date" id="d-adate"/>
-          <span class="error-msg" id="err-adate">Please select the attendance date.</span>
-        </div>
-        <div class="field">
-          <label>Issue type</label>
-          <select id="d-aissue">
-            <option value="">Select issue</option>
-            <option>Present but not marked</option>
-            <option>Marked absent by mistake</option>
-            <option>Late entry not counted</option>
-            <option>Portal not showing attendance</option>
-            <option>Other</option>
-          </select>
-        </div>
-      </div>`
+    dynHtml: ''
   },
   marks: {
     label: 'Lab Marks',
@@ -444,28 +433,7 @@ const ALL_TYPES = {
       <path d="M9 11l3 3L22 4"/>
       <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
     </svg>`,
-    dynHtml: `
-      <div class="field-row three">
-        <div class="field">
-          <label>Marks awarded</label>
-          <input type="number" id="d-mawd" min="0" max="100" placeholder="e.g. 7"/>
-        </div>
-        <div class="field">
-          <label>Marks expected</label>
-          <input type="number" id="d-mexp" min="0" max="100" placeholder="e.g. 10"/>
-        </div>
-        <div class="field">
-          <label>Discrepancy type</label>
-          <select id="d-mdisc">
-            <option value="">Select</option>
-            <option>Not entered in portal</option>
-            <option>Wrong marks entered</option>
-            <option>Partial despite complete work</option>
-            <option>Viva marks missing</option>
-            <option>Other</option>
-          </select>
-        </div>
-      </div>`
+    dynHtml: ''
   },
   assignment: {
     label: 'Assignment',
@@ -610,7 +578,7 @@ const ALL_TYPES = {
 })();
 
 function toggleLab(chip) {
-  const lab = chip.dataset.lab;
+  var lab = chip.dataset.lab;
   if (selectedLabs.has(lab)) {
     selectedLabs.delete(lab);
     chip.classList.remove('active');
@@ -619,6 +587,74 @@ function toggleLab(chip) {
     chip.classList.add('active');
   }
   if (selectedLabs.size > 0) document.getElementById('err-labnum').style.display = 'none';
+  rebuildLabDetailRows();
+}
+
+// ── Per-lab detail rows ─────────────────────────────────────
+function buildLabDetailRow(lab) {
+  var n     = lab.replace('Lab ', '');
+  var today = new Date().toISOString().split('T')[0];
+  var row   = document.createElement('div');
+  row.id        = 'lrow-' + n;
+  row.className = 'lab-detail-row';
+
+  var inner =
+    '<span class="lab-detail-label">' + lab + '</span>' +
+    '<div class="field">' +
+      '<label>Date <span class="req">*</span></label>' +
+      '<input type="date" id="ldate-' + n + '" class="lab-date-input" max="' + today + '"/>' +
+      '<span class="error-msg" id="err-ldate-' + n + '">Select date for ' + lab + '.</span>' +
+    '</div>';
+
+  if (selectedType === 'attendance') {
+    inner +=
+      '<div class="field">' +
+        '<label>Issue</label>' +
+        '<select id="lissue-' + n + '">' +
+          '<option value="">Select issue</option>' +
+          '<option>Present but not marked</option>' +
+          '<option>Marked absent by mistake</option>' +
+          '<option>Late entry not counted</option>' +
+          '<option>Portal not showing attendance</option>' +
+          '<option>Other</option>' +
+        '</select>' +
+      '</div>';
+  } else if (selectedType === 'marks') {
+    inner +=
+      '<div class="field">' +
+        '<label>Marks awarded</label>' +
+        '<input type="number" id="lmawd-' + n + '" min="0" max="100" placeholder="e.g. 7"/>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Marks expected</label>' +
+        '<input type="number" id="lmexp-' + n + '" min="0" max="100" placeholder="e.g. 10"/>' +
+      '</div>' +
+      '<div class="field">' +
+        '<label>Discrepancy</label>' +
+        '<select id="lmdisc-' + n + '">' +
+          '<option value="">Select</option>' +
+          '<option>Not entered in portal</option>' +
+          '<option>Wrong marks entered</option>' +
+          '<option>Partial despite complete work</option>' +
+          '<option>Viva marks missing</option>' +
+          '<option>Other</option>' +
+        '</select>' +
+      '</div>';
+  }
+
+  row.innerHTML = inner;
+  return row;
+}
+
+function rebuildLabDetailRows() {
+  var container = document.getElementById('lab-detail-rows');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!selectedType || !ALL_TYPES[selectedType] || !ALL_TYPES[selectedType].needsLab) return;
+  var sorted = Array.from(selectedLabs).sort(function(a, b) {
+    return parseInt(a.replace('Lab ', '')) - parseInt(b.replace('Lab ', ''));
+  });
+  sorted.forEach(function(lab) { container.appendChild(buildLabDetailRow(lab)); });
 }
 
 // ── Load settings from Apps Script & render query cards ─
@@ -698,6 +734,7 @@ function selectType(type) {
 
   // Show/hide lab section
   document.getElementById('lab-section').classList.toggle('hidden', !ALL_TYPES[type].needsLab);
+  rebuildLabDetailRows();
 
   // Render dynamic fields
   const t  = ALL_TYPES[type];
@@ -747,6 +784,7 @@ function validate() {
   var ok = true;
   document.querySelectorAll('.field-invalid').forEach(function(f) { f.classList.remove('field-invalid'); });
   document.querySelectorAll('.error-msg').forEach(function(e)      { e.style.display = 'none'; });
+  document.querySelectorAll('.lab-date-input').forEach(function(el) { el.classList.remove('ldate-invalid'); });
 
   if (!EMAIL_RE.test(gv('email').trim())) { showErr('email');   ok = false; }
   if (gv('name').trim().length < 2)       { showErr('name');    ok = false; }
@@ -759,11 +797,18 @@ function validate() {
     if (ALL_TYPES[selectedType].needsLab) {
       if (selectedLabs.size === 0) {
         document.getElementById('err-labnum').style.display = 'block'; ok = false;
+      } else {
+        selectedLabs.forEach(function(lab) {
+          var n  = lab.replace('Lab ', '');
+          var el = document.getElementById('ldate-' + n);
+          if (el && !el.value) {
+            el.classList.add('ldate-invalid');
+            var err = document.getElementById('err-ldate-' + n);
+            if (err) err.style.display = 'block';
+            ok = false;
+          }
+        });
       }
-      if (!gv('labdate')) { showErr('labdate'); ok = false; }
-    }
-    if (selectedType === 'attendance' && document.getElementById('d-adate') && !gv('d-adate')) {
-      showErr('adate'); ok = false;
     }
   }
 
@@ -792,19 +837,42 @@ function doSubmit() {
   var ref = 'QRY-' + Date.now().toString(36).toUpperCase().slice(-7);
   var ts  = new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' });
 
-  var extraDate = gv('d-adate') || gv('d-assdate') || gv('d-findate') || gv('d-projdate') || '';
-
-  var issueParts = [
-    gv('d-aissue'),
-    gv('d-mdisc'),
-    gv('d-assno')  ? ('Asgn: '  + gv('d-assno'))  : '',
-    gv('d-finq')   ? ('Q: '     + gv('d-finq'))   : '',
-    gv('d-projt')  ? ('Proj: '  + gv('d-projt'))  : ''
-  ].filter(Boolean);
+  var extraDate = gv('d-assdate') || gv('d-findate') || gv('d-projdate') || '';
 
   var labsSorted = Array.from(selectedLabs).sort(function(a, b) {
     return parseInt(a.replace('Lab ', '')) - parseInt(b.replace('Lab ', ''));
   });
+
+  // Collect per-lab data
+  var labDateParts = [], labIssueParts = [], labMawdParts = [], labMexpParts = [], labMdiscParts = [];
+  if (ALL_TYPES[selectedType] && ALL_TYPES[selectedType].needsLab) {
+    labsSorted.forEach(function(lab) {
+      var n  = lab.replace('Lab ', '');
+      var ld = document.getElementById('ldate-' + n);
+      if (ld && ld.value) labDateParts.push(lab + ': ' + ld.value);
+      if (selectedType === 'attendance') {
+        var iss = document.getElementById('lissue-' + n);
+        if (iss && iss.value) labIssueParts.push(lab + ': ' + iss.value);
+      } else if (selectedType === 'marks') {
+        var aw = document.getElementById('lmawd-' + n);
+        var ex = document.getElementById('lmexp-' + n);
+        var dc = document.getElementById('lmdisc-' + n);
+        if (aw && aw.value) labMawdParts.push(lab + ': ' + aw.value);
+        if (ex && ex.value) labMexpParts.push(lab + ': ' + ex.value);
+        if (dc && dc.value) labMdiscParts.push(lab + ': ' + dc.value);
+      }
+    });
+  }
+
+  var issueParts = [];
+  if (selectedType === 'attendance')  issueParts = labIssueParts;
+  else if (selectedType === 'marks')  issueParts = labMdiscParts;
+  else issueParts = [
+    gv('d-mdisc'),
+    gv('d-assno') ? ('Asgn: ' + gv('d-assno')) : '',
+    gv('d-finq')  ? ('Q: '    + gv('d-finq'))  : '',
+    gv('d-projt') ? ('Proj: ' + gv('d-projt')) : ''
+  ].filter(Boolean);
 
   var payload = {
     action:        'submit',
@@ -815,12 +883,12 @@ function doSubmit() {
     rollNumber:    gv('roll').trim().toUpperCase(),
     section:       gv('section'),
     labNumber:     labsSorted.join(', '),
-    labDate:       gv('labdate'),
+    labDate:       labDateParts.join(' | '),
     queryType:     selectedType,
     description:   gv('desc').trim(),
     extraDate:     extraDate,
-    marksAwarded:  gv('d-mawd') || '',
-    marksExpected: gv('d-mexp') || '',
+    marksAwarded:  labMawdParts.length ? labMawdParts.join(' | ') : (gv('d-mawd') || ''),
+    marksExpected: labMexpParts.length ? labMexpParts.join(' | ') : (gv('d-mexp') || ''),
     issue:         issueParts.join(' | '),
     request:       '',
     status:        'Pending',
@@ -875,14 +943,15 @@ function resetForm() {
   document.getElementById('err-labnum').style.display    = 'none';
   document.getElementById('lab-section').classList.remove('hidden');
 
+  document.getElementById('lab-detail-rows').innerHTML = '';
   document.querySelectorAll('.qtype-card').forEach(function(c)   { c.classList.remove('selected'); });
   document.querySelectorAll('.error-msg').forEach(function(e)    { e.style.display = 'none'; });
   document.querySelectorAll('.field-invalid').forEach(function(f){ f.classList.remove('field-invalid'); });
-  document.getElementById('labdate').max = new Date().toISOString().split('T')[0];
+  document.querySelectorAll('.lab-date-input').forEach(function(el) { el.classList.remove('ldate-invalid'); });
 }
 
 // ── Init ───────────────────────────────────────────────
-document.getElementById('labdate').max = new Date().toISOString().split('T')[0];
+
 loadSettings();
 </script>
 </body>
