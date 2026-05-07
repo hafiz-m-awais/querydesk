@@ -199,8 +199,9 @@ function doPost(e) {
           );
           attachmentUrl = driveFile.getUrl();
         } catch (attachErr) {
-          // Drive upload failed — submission still proceeds
-          attachmentUrl = '';
+          // Drive upload failed — submission still proceeds without attachment
+          console.log('Drive upload error: ' + attachErr.toString());
+          attachmentUrl = 'ERROR: ' + attachErr.message;
         }
       }
 
@@ -358,4 +359,26 @@ function updateRowField(referenceId, colValueMap) {
     }
   }
   return false;
+}
+
+// ── TEST: run this from the GAS editor to verify Drive access ────
+// Apps Script editor → select testDriveUpload → ▶ Run
+// Then check View → Execution log for the result.
+function testDriveUpload() {
+  try {
+    var folderName = 'ML Lab Query Attachments';
+    var folders    = DriveApp.getFoldersByName(folderName);
+    var folder     = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+    var blob       = Utilities.newBlob('test content', 'text/plain', 'test_attachment.txt');
+    var driveFile  = folder.createFile(blob);
+    driveFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var url = driveFile.getUrl();
+    console.log('SUCCESS — Drive upload works. URL: ' + url);
+    // Clean up test file
+    driveFile.setTrashed(true);
+    console.log('Test file deleted.');
+  } catch (err) {
+    console.log('FAILED — ' + err.toString());
+    console.log('Fix: re-deploy as new version and grant DriveApp permission.');
+  }
 }
