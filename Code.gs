@@ -262,8 +262,7 @@ function doPost(e) {
               'Query type: '  + data.queryType + '\n\n' +
               'Description:\n' + data.description + '\n\n' +
               (attachmentUrl && attachmentUrl.indexOf('https://') === 0 ? 'Attachment: ' + attachmentUrl + '\n\n' : '') +
-              'Submitted: '   + data.timestamp + '\n' +
-              'Admin panel: https://hafiz-m-awais.github.io/mllab-query/admin.html'
+              'Submitted: '   + data.timestamp
           });
         } catch (mailErr) {
           // Email failed — submission still proceeds
