@@ -30,7 +30,7 @@ var HEADERS = [
   'Reference ID', 'Timestamp', 'Email', 'Name', 'Roll Number',
   'Section', 'Lab Number', 'Lab Date', 'Query Type', 'Description',
   'Extra Date', 'Marks Awarded', 'Marks Expected', 'Issue / Reason',
-  'Request Type', 'Status', 'Instructor Notes'
+  'Request Type', 'Status', 'Instructor Notes', 'Attachment URL'
 ];
 
 // ── CORS helper ──────────────────────────────────────────────────
@@ -128,7 +128,8 @@ function doGet(e) {
           issue:         row[13] || '',
           request:       row[14] || '',
           status:        row[15] || 'Pending',
-          notes:         row[16] || ''
+          notes:         row[16] || '',
+          attachmentUrl: row[17] || ''
         };
       });
 
@@ -178,6 +179,31 @@ function doPost(e) {
         }
       }
 
+      // ── Optional: save attachment to Drive ─────────────────
+      var attachmentUrl = '';
+      if (data.attachmentData && data.attachmentName) {
+        try {
+          var folderName = 'ML Lab Query Attachments';
+          var folders    = DriveApp.getFoldersByName(folderName);
+          var folder     = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+          var bytes      = Utilities.base64Decode(data.attachmentData);
+          var blob       = Utilities.newBlob(
+                             bytes,
+                             data.attachmentMimeType || 'application/octet-stream',
+                             (data.referenceId || 'file') + '_' + data.attachmentName
+                           );
+          var driveFile  = folder.createFile(blob);
+          driveFile.setSharing(
+            DriveApp.Access.ANYONE_WITH_LINK,
+            DriveApp.Permission.VIEW
+          );
+          attachmentUrl = driveFile.getUrl();
+        } catch (attachErr) {
+          // Drive upload failed — submission still proceeds
+          attachmentUrl = '';
+        }
+      }
+
       sheet.appendRow([
         data.referenceId   || '',
         data.timestamp     || new Date().toLocaleString(),
@@ -195,7 +221,8 @@ function doPost(e) {
         data.issue         || '',
         data.request       || '',
         data.status        || 'Pending',
-        ''   // notes — empty on submission
+        '',            // notes — empty on submission
+        attachmentUrl  // Google Drive URL if a file was attached
       ]);
 
       // ── Optional email notification to instructor ─────────────

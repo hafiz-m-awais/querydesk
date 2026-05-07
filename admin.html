@@ -447,6 +447,12 @@
     </div>
     <div class="modal-body">
       <div class="detail-grid" id="m-grid"></div>
+      <div id="m-attachment" style="display:none;margin-bottom:14px">
+        <a id="m-attachment-link" target="_blank" rel="noopener noreferrer" class="btn-sm"
+           style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--blue-dark);border-color:#b3d4f0;background:var(--blue-light)">
+          &#128206; View attachment
+        </a>
+      </div>
       <div style="margin-bottom:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-sec)">Description</div>
       <div class="detail-desc" id="m-desc"></div>
       <div class="status-row">
@@ -461,7 +467,7 @@
         </div>
         <div class="field" style="flex:2">
           <label>Instructor notes (optional)</label>
-          <textarea id="m-notes" placeholder="Add notes visible in admin panel…"></textarea>
+          <textarea id="m-notes" placeholder="Add a note — visible to the student in their status tracker…"></textarea>
         </div>
       </div>
     </div>
@@ -726,7 +732,10 @@ function renderTable() {
       '<td><span class="t-badge t-' + esc(r.queryType) + '">' + typeLabel + '</span></td>' +
       '<td><span class="s-badge s-' + esc(r.status) + '">' + esc(r.status) + '</span></td>' +
       '<td class="hide-sm" style="font-size:12px;color:var(--text-sec)">' + esc((r.timestamp || '').split(',')[0]) + '</td>' +
-      '<td><button class="btn-sm" onclick="openModal(\'' + esc(r.referenceId) + '\')">Review</button></td>' +
+      '<td><button class="btn-sm" onclick="openModal(\'' + esc(r.referenceId) + '\')">Review</button>' +
+      (r.attachmentUrl && r.attachmentUrl.indexOf('https://drive.google.com/') === 0 ?
+        ' <a href="' + r.attachmentUrl + '" target="_blank" rel="noopener noreferrer" class="btn-sm" title="View attachment" style="text-decoration:none;padding:5px 8px">&#128206;</a>' : '') +
+      '</td>' +
       '</tr>';
   }).join('');
 }
@@ -761,7 +770,14 @@ function openModal(refId) {
   document.getElementById('m-grid').innerHTML = fields.map(function(f) {
     return '<div class="detail-item"><label>' + f[0] + '</label><div class="val">' + esc(f[1] || '—') + '</div></div>';
   }).join('');
-
+  var attDiv  = document.getElementById('m-attachment');
+  var attLink = document.getElementById('m-attachment-link');
+  if (r.attachmentUrl && r.attachmentUrl.indexOf('https://drive.google.com/') === 0) {
+    attLink.href = r.attachmentUrl;
+    attDiv.style.display = 'block';
+  } else {
+    attDiv.style.display = 'none';
+  }
   document.getElementById('modal').classList.add('open');
 }
 
@@ -817,11 +833,11 @@ function deleteQuery() {
 function exportCSV() {
   var headers = ['Reference ID','Timestamp','Email','Name','Roll Number',
     'Section','Lab Number','Lab Date','Query Type','Description',
-    'Extra Date','Marks Awarded','Marks Expected','Issue','Request','Status','Notes'];
+    'Extra Date','Marks Awarded','Marks Expected','Issue','Request','Status','Notes','Attachment URL'];
   var rows = allRows.map(function(r) {
     return [r.referenceId, r.timestamp, r.email, r.name, r.rollNumber,
       r.section, r.labNumber, r.labDate, r.queryType, r.description,
-      r.extraDate, r.marksAwarded, r.marksExpected, r.issue, r.request, r.status, r.notes
+      r.extraDate, r.marksAwarded, r.marksExpected, r.issue, r.request, r.status, r.notes, r.attachmentUrl || ''
     ].map(function(v) { return '"' + (v||'').replace(/"/g, '""') + '"'; });
   });
 
