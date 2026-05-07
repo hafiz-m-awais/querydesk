@@ -607,6 +607,11 @@
           <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Instructor Name <span style="font-weight:400;color:var(--text-hint)">(optional)</span></label>
           <input type="text" id="s-instrname" placeholder="e.g. Dr. Ahmed" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
         </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Student Email Domain <span style="font-weight:400;color:var(--text-hint)">(used for validation)</span></label>
+          <input type="text" id="s-emaildomain" placeholder="nu.edu.pk" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+          <div style="font-size:11px;color:var(--text-hint);margin-top:3px">Students must submit from an email ending in this domain. Default: nu.edu.pk (NUCES strict format). Change for other universities.</div>
+        </div>
       </div>
     </div>
       <span class="save-status" id="settings-save-status">✓ Saved</span>
@@ -623,7 +628,8 @@
 // ════════════════════════════════════════════════════════
 //  CONFIGURATION — must match Code.gs
 // ════════════════════════════════════════════════════════
-const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwIXl9VGefgmE-JGYftiqCduDcZ8wlFngKPMpGW-odaJ747pa5MDZttwfeG_Yr9hfoC8w/exec';
+var _gsParam = new URLSearchParams(location.search).get('gs');
+var SCRIPT_URL = _gsParam ? decodeURIComponent(_gsParam) : 'https://script.google.com/macros/s/AKfycbwIXl9VGefgmE-JGYftiqCduDcZ8wlFngKPMpGW-odaJ747pa5MDZttwfeG_Yr9hfoC8w/exec';
 // Password is never stored in source code.
 // It is verified server-side by GAS against the ADMIN_PASSWORD Script Property.
 // ════════════════════════════════════════════════════════
@@ -639,7 +645,7 @@ const TYPE_LABELS = {
 let allRows       = [];
 let editingRef    = null;
 let sessionPw     = '';   // set on successful login; never persisted
-let loadedCourse  = { courseName:'ML for Business Analytics', isLab:true, sessionCount:14, sessionLabel:'Lab', sections:['BSBA-6A','BSBA-6B','MSBA'], term:'Spring 2026', instructorName:'' };
+let loadedCourse  = { courseName:'ML for Business Analytics', isLab:true, sessionCount:14, sessionLabel:'Lab', sections:['BSBA-6A','BSBA-6B','MSBA'], term:'Spring 2026', instructorName:'', emailDomain:'nu.edu.pk' };
 let sortCol       = 'timestamp';
 let sortDir       = -1;   // -1 = newest first, 1 = oldest first
 
@@ -952,6 +958,7 @@ function populateCourseInputs(c) {
   var cnt = document.getElementById('s-sessioncount'); if (cnt) cnt.value = c.sessionCount || 14;
   var sec = document.getElementById('s-sections');  if (sec) sec.value = (c.sections || []).join(', ');
   var instr = document.getElementById('s-instrname'); if (instr) instr.value = c.instructorName || '';
+  var ed = document.getElementById('s-emaildomain'); if (ed) ed.value = c.emailDomain || 'nu.edu.pk';
 }
 
 function closeSettings() {
@@ -982,7 +989,8 @@ function saveSettings() {
     sessionLabel:   document.getElementById('s-sessionlabel').value.trim() || 'Lab',
     sessionCount:   parseInt(document.getElementById('s-sessioncount').value, 10) || 14,
     sections:       rawSections.length ? rawSections : loadedCourse.sections,
-    instructorName: document.getElementById('s-instrname').value.trim()
+    instructorName: document.getElementById('s-instrname').value.trim(),
+    emailDomain:    (document.getElementById('s-emaildomain').value.trim() || 'nu.edu.pk').toLowerCase()
   };
 
   if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {

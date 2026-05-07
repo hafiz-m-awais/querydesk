@@ -150,4 +150,50 @@ Uncomment it and fill in your email. You'll get an email every time a student su
 
 ---
 
+## Multi-instructor deployment (FAST-NUCES department rollout)
+
+Each instructor runs their **own independent GAS deployment**. The shared GitHub Pages frontend connects to whichever deployment is specified in the `?gs=` URL parameter.
+
+### How it works
+
+| URL | Who uses it |
+|---|---|
+| `https://yourusername.github.io/mllab-query/directory.html` | Students browse all courses |
+| `https://yourusername.github.io/mllab-query/index.html?gs=INSTRUCTOR_URL` | Students submit to a specific course |
+| `https://yourusername.github.io/mllab-query/admin.html?gs=INSTRUCTOR_URL` | Instructor manages their own queries |
+
+`INSTRUCTOR_URL` is the GAS deployment URL (`https://script.google.com/macros/s/AKfy.../exec`) **URL-encoded**. Get the encoded version by running this in your browser console: `encodeURIComponent('YOUR_GAS_URL')`.
+
+### Steps for a new instructor
+
+1. Follow **STEP 1 → STEP 3** of this guide (Sheet + Apps Script + Deploy) to get a GAS deployment URL
+2. Skip STEP 4 (no need to edit HTML files) — send your GAS URL to the IT coordinator
+3. Open your admin panel: `admin.html?gs=YOUR_ENCODED_GAS_URL` → log in → **Settings**
+4. Fill in Course Name, Term, Sections, Session Count, Email Domain → Save
+5. Share the student link: `index.html?gs=YOUR_ENCODED_GAS_URL`
+6. Bookmark your admin link
+
+### Adding a course to the directory
+
+Open `directory.html` and add an entry to the `COURSES` array near the top of the `<script>` block:
+
+```javascript
+{
+  name:       'Data Structures',
+  instructor: 'Dr. Fatima',
+  dept:       'CS',
+  term:       'Spring 2026',
+  sections:   ['CS-4A', 'CS-4B'],
+  gasUrl:     'https://script.google.com/macros/s/AKfycbx.../exec'
+}
+```
+
+Commit and push — the directory page updates immediately.
+
+### Email domain for non-NUCES courses
+
+In the admin panel **Settings → Student Email Domain**, change `nu.edu.pk` to your university's domain (e.g. `nust.edu.pk`). The student form will accept any email ending in that domain.
+
+---
+
 *Generated for Awais — FAST-NUCES Islamabad, Department of Management*

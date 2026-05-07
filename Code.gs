@@ -34,7 +34,8 @@ var DEFAULT_COURSE_SETTINGS = {
   sessionLabel:  'Lab',
   sections:      ['BSBA-6A', 'BSBA-6B', 'MSBA'],
   term:          'Spring 2026',
-  instructorName: ''
+  instructorName: '',
+  emailDomain:   'nu.edu.pk'
 };
 // ─────────────────────────────────────────────────────────────────
 
