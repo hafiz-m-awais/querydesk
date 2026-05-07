@@ -254,9 +254,6 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
             <label>Section <span class="req">*</span></label>
             <select id="section">
               <option value="">Select your section</option>
-              <option>BSBA-6A</option>
-              <option>BSBA-6B</option>
-              <option>MSBA</option>
             </select>
             <span class="err" id="err-section">Please select your section.</span>
           </div>
@@ -361,6 +358,7 @@ var ROLL_RE  = /^\d{2}[IKik]-\d{4}$/;
 var selectedTypes  = new Set();
 var labSelections  = {};
 var loadedSettings = null;
+var loadedCourse   = { courseName:'QueryDesk', isLab:true, sessionCount:14, sessionLabel:'Lab', sections:['BSBA-6A','BSBA-6B','MSBA'], term:'Spring 2026', instructorName:'' };
 var currentStep    = 1;
 var attachmentBase64 = ''; var attachmentFileName = ''; var attachmentMimeType = ''; var attachmentReading = false;
 var isUrgent = false;
@@ -520,26 +518,38 @@ function buildTypeSection(key) {
   var body=document.createElement('div');
   body.className='type-sec-body';
   if(t.needsLab) {
+    var sessionLbl    = (loadedCourse && loadedCourse.sessionLabel) || 'Lab';
+    var sessionCount  = (loadedCourse && loadedCourse.sessionCount) || 14;
+    var isLabCourse   = !(loadedCourse && loadedCourse.isLab === false);
     labSelections[key]=new Set();
+    if(isLabCourse) {
     var lbl=document.createElement('label');
-    lbl.innerHTML='Lab number(s) <span class="req">*</span><span style="font-weight:400;color:var(--th);margin-left:5px">(select one or more)</span>';
+    lbl.innerHTML=sessionLbl+' number(s) <span class="req">*</span><span style="font-weight:400;color:var(--th);margin-left:5px">(select one or more)</span>';
     body.appendChild(lbl);
     var grid=document.createElement('div');
     grid.className='lab-chips'; grid.id='lchips-'+key;
     body.appendChild(grid);
-    for(var i=1;i<=14;i++){
-      (function(n,tk){
+    for(var i=1;i<=sessionCount;i++){
+      (function(n,tk,sl){
         var chip=document.createElement('div');
-        chip.className='lab-chip'; chip.textContent='Lab '+n; chip.dataset.lab='Lab '+n;
+        chip.className='lab-chip'; chip.textContent=sl+' '+n; chip.dataset.lab=sl+' '+n;
         chip.onclick=function(){toggleLabForType(chip,tk);};
         grid.appendChild(chip);
-      })(i,key);
+      })(i,key,sessionLbl);
     }
     var lErr=document.createElement('span');
-    lErr.className='err'; lErr.id='err-labnum-'+key; lErr.textContent='Please select at least one lab.';
+    lErr.className='err'; lErr.id='err-labnum-'+key; lErr.textContent='Please select at least one '+sessionLbl.toLowerCase()+'.';
     body.appendChild(lErr);
-    var rows=document.createElement('div'); rows.id='lab-rows-'+key;
-    body.appendChild(rows);
+    var rows2=document.createElement('div'); rows2.id='lab-rows-'+key;
+    body.appendChild(rows2);
+    } else {
+      // Non-lab course: show a single date field for the session
+      var lErr=document.createElement('span');
+      lErr.className='err'; lErr.id='err-labnum-'+key; lErr.textContent='Please select at least one session.';
+      body.appendChild(lErr);
+      var rows2=document.createElement('div'); rows2.id='lab-rows-'+key;
+      body.appendChild(rows2);
+    }
   } else {
     var nf=document.createElement('div');
     nf.innerHTML=buildNonLabHtml(key,today);
@@ -706,6 +716,34 @@ function loadSettings(){
       }
     })
     .catch(function(){});
+  jsonpGet(SCRIPT_URL+'?action=getCourseSettings')
+    .then(function(d){
+      if(d.status==='ok'&&d.course){ loadedCourse=d.course; applyCourseBranding(d.course); }
+    })
+    .catch(function(){});
+}
+
+function applyCourseBranding(c){
+  // Heading & subtitle
+  var h1=document.querySelector('.card-head h1');
+  var sub=document.querySelector('.card-head p');
+  if(h1)  h1.textContent=c.courseName||'QueryDesk';
+  if(sub) sub.textContent='Student Query Submission \u00b7 '+(c.term||'');
+  // Badge with sections list
+  var badges=document.querySelectorAll('.head-badge');
+  if(badges.length>=2) badges[1].textContent=(c.sections||[]).join(' \u00b7 ');
+  // Populate section dropdown
+  var sel=document.getElementById('section');
+  if(sel&&c.sections&&c.sections.length){
+    var cur=sel.value;
+    sel.innerHTML='<option value="">Select your section</option>';
+    c.sections.forEach(function(s){
+      var o=document.createElement('option');
+      o.textContent=s; o.value=s;
+      sel.appendChild(o);
+    });
+    if(cur) sel.value=cur;
+  }
 }
 
 // HELPERS
@@ -779,6 +817,7 @@ window.addEventListener('online',syncOfflineBanner);
 syncOfflineBanner();
 
 loadSettings();
+applyCourseBranding(loadedCourse);
 </script>
 </body>
 </html>

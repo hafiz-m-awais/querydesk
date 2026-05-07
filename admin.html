@@ -389,7 +389,6 @@
       <input type="text" id="f-search" placeholder="Search name, roll, ref ID…" oninput="renderTable()"/>
       <select id="f-section" onchange="renderTable()">
         <option value="">All sections</option>
-        <option>BSBA-6A</option><option>BSBA-6B</option><option>MSBA</option>
       </select>
       <select id="f-status" onchange="renderTable()">
         <option value="">All statuses</option>
@@ -406,11 +405,6 @@
       </select>
       <select id="f-lab" onchange="renderTable()">
         <option value="">All labs</option>
-        <option>Lab 1</option><option>Lab 2</option><option>Lab 3</option>
-        <option>Lab 4</option><option>Lab 5</option><option>Lab 6</option>
-        <option>Lab 7</option><option>Lab 8</option><option>Lab 9</option>
-        <option>Lab 10</option><option>Lab 11</option><option>Lab 12</option>
-        <option>Lab 13</option><option>Lab 14</option>
       </select>
       <span id="data-info" style="font-size:12px;color:var(--text-hint);margin-left:auto;white-space:nowrap"></span>
     </div>
@@ -572,7 +566,49 @@
         </label>
       </div>
     </div>
-    <div class="settings-foot">
+
+      <!-- Course Settings -->
+      <div class="toggle-section-head" style="margin:18px 0 10px;font-size:13px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:.06em;padding:0 4px">Course Settings</div>
+      <div style="display:grid;gap:10px;padding:0 4px 4px">
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Course Name</label>
+          <input type="text" id="s-coursename" placeholder="ML for Business Analytics" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Term / Semester</label>
+          <input type="text" id="s-term" placeholder="Spring 2026" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <label class="toggle-switch" style="flex-shrink:0">
+            <input type="checkbox" id="s-islab" checked/>
+            <span class="toggle-track"></span>
+            <span class="toggle-knob"></span>
+          </label>
+          <div>
+            <div style="font-size:13px;font-weight:600">Lab / Session course</div>
+            <div style="font-size:11px;color:var(--text-hint)">Disable if not a lab course (hides session chips on student form)</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Session Label</label>
+            <input type="text" id="s-sessionlabel" placeholder="Lab" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+          </div>
+          <div>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Session Count</label>
+            <input type="number" id="s-sessioncount" min="1" max="30" value="14" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Sections <span style="font-weight:400;color:var(--text-hint)">(comma-separated)</span></label>
+          <input type="text" id="s-sections" placeholder="BSBA-6A, BSBA-6B, MSBA" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Instructor Name <span style="font-weight:400;color:var(--text-hint)">(optional)</span></label>
+          <input type="text" id="s-instrname" placeholder="e.g. Dr. Ahmed" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+        </div>
+      </div>
+    </div>
       <span class="save-status" id="settings-save-status">✓ Saved</span>
       <button class="btn-outline" onclick="closeSettings()">Cancel</button>
       <button class="btn-primary" onclick="saveSettings()">Save settings</button>
@@ -603,6 +639,7 @@ const TYPE_LABELS = {
 let allRows       = [];
 let editingRef    = null;
 let sessionPw     = '';   // set on successful login; never persisted
+let loadedCourse  = { courseName:'ML for Business Analytics', isLab:true, sessionCount:14, sessionLabel:'Lab', sections:['BSBA-6A','BSBA-6B','MSBA'], term:'Spring 2026', instructorName:'' };
 let sortCol       = 'timestamp';
 let sortDir       = -1;   // -1 = newest first, 1 = oldest first
 
@@ -895,9 +932,26 @@ function openSettings() {
         if (d.status === 'ok') applySettingsToToggles(d.settings);
       })
       .catch(function() {});
+    jsonpGet(SCRIPT_URL + '?action=getCourseSettings')
+      .then(function(d) {
+        if (d.status === 'ok' && d.course) populateCourseInputs(d.course);
+      })
+      .catch(function() {});
   }
+  // Populate course inputs from local loadedCourse as a fallback
+  populateCourseInputs(loadedCourse);
   document.getElementById('settings-save-status').style.display = 'none';
   document.getElementById('settings-overlay').classList.add('open');
+}
+
+function populateCourseInputs(c) {
+  var n = document.getElementById('s-coursename'); if (n) n.value = c.courseName || '';
+  var t = document.getElementById('s-term');       if (t) t.value = c.term || '';
+  var b = document.getElementById('s-islab');      if (b) b.checked = c.isLab !== false;
+  var l = document.getElementById('s-sessionlabel'); if (l) l.value = c.sessionLabel || 'Lab';
+  var cnt = document.getElementById('s-sessioncount'); if (cnt) cnt.value = c.sessionCount || 14;
+  var sec = document.getElementById('s-sections');  if (sec) sec.value = (c.sections || []).join(', ');
+  var instr = document.getElementById('s-instrname'); if (instr) instr.value = c.instructorName || '';
 }
 
 function closeSettings() {
@@ -920,13 +974,33 @@ function saveSettings() {
     project:    document.getElementById('tog-project').checked
   };
 
+  var rawSections = (document.getElementById('s-sections').value || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+  var courseSettings = {
+    courseName:     document.getElementById('s-coursename').value.trim(),
+    term:           document.getElementById('s-term').value.trim(),
+    isLab:          document.getElementById('s-islab').checked,
+    sessionLabel:   document.getElementById('s-sessionlabel').value.trim() || 'Lab',
+    sessionCount:   parseInt(document.getElementById('s-sessioncount').value, 10) || 14,
+    sections:       rawSections.length ? rawSections : loadedCourse.sections,
+    instructorName: document.getElementById('s-instrname').value.trim()
+  };
+
   if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
     fetch(SCRIPT_URL, {
       method: 'POST', mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'saveSettings', password: sessionPw, settings: settings })
     }).then(function() {}).catch(function() {});
+    fetch(SCRIPT_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveCourseSettings', password: sessionPw, courseSettings: courseSettings })
+    }).then(function() {}).catch(function() {});
   }
+
+  // Update local copy and refresh filter dropdowns
+  loadedCourse = courseSettings;
+  populateFilterDropdowns(courseSettings);
 
   var ss = document.getElementById('settings-save-status');
   ss.style.display = 'inline';
@@ -962,6 +1036,32 @@ function loadSettings() {
   jsonpGet(SCRIPT_URL + '?action=getSettings')
     .then(function(d) { if (d.status === 'ok') applySettingsToToggles(d.settings); })
     .catch(function() {});
+  jsonpGet(SCRIPT_URL + '?action=getCourseSettings')
+    .then(function(d) { if (d.status === 'ok' && d.course) { loadedCourse = d.course; populateFilterDropdowns(d.course); } })
+    .catch(function() {});
+}
+
+function populateFilterDropdowns(c) {
+  var secSel = document.getElementById('f-section');
+  if (secSel) {
+    var curSec = secSel.value;
+    secSel.innerHTML = '<option value="">All sections</option>';
+    (c.sections || []).forEach(function(s) {
+      var o = document.createElement('option'); o.textContent = s; o.value = s; secSel.appendChild(o);
+    });
+    if (curSec) secSel.value = curSec;
+  }
+  var labSel = document.getElementById('f-lab');
+  if (labSel) {
+    var curLab = labSel.value;
+    var lbl = c.sessionLabel || 'Lab';
+    var cnt = c.sessionCount || 14;
+    labSel.innerHTML = '<option value="">All ' + lbl.toLowerCase() + 's</option>';
+    for (var i = 1; i <= cnt; i++) {
+      var o = document.createElement('option'); o.textContent = lbl + ' ' + i; o.value = lbl + ' ' + i; labSel.appendChild(o);
+    }
+    if (curLab) labSel.value = curLab;
+  }
 }
 
 // ── Demo data ──────────────────────────────────────────
@@ -997,6 +1097,9 @@ var DEMO_DATA = [
     extraDate:'2026-04-15', marksAwarded:'14', marksExpected:'20', issue:'Penalty applied incorrectly | Asgn: Assignment 3',
     request:'', status:'Pending', notes:'' }
 ];
+
+// Populate filter dropdowns with defaults immediately (before login/JSONP)
+populateFilterDropdowns(loadedCourse);
 </script>
 </body>
 </html>

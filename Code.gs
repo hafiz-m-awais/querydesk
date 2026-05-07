@@ -26,6 +26,18 @@ var DEFAULT_SETTINGS = {
 };
 // ─────────────────────────────────────────────────────────────────
 
+// ── Default course settings (if admin has never configured the course) ─
+var DEFAULT_COURSE_SETTINGS = {
+  courseName:    'ML for Business Analytics',
+  isLab:         true,
+  sessionCount:  14,
+  sessionLabel:  'Lab',
+  sections:      ['BSBA-6A', 'BSBA-6B', 'MSBA'],
+  term:          'Spring 2026',
+  instructorName: ''
+};
+// ─────────────────────────────────────────────────────────────────
+
 var HEADERS = [
   'Reference ID', 'Timestamp', 'Email', 'Name', 'Roll Number',
   'Section', 'Lab Number', 'Lab Date', 'Query Type', 'Description',
@@ -73,6 +85,14 @@ function doGet(e) {
       var raw      = props.getProperty('querySettings');
       var settings = raw ? JSON.parse(raw) : DEFAULT_SETTINGS;
       return gasRespond({ status: 'ok', settings: settings }, cb);
+    }
+
+    // ── Public: return course configuration ───────────────────────
+    if (action === 'getCourseSettings') {
+      var props  = PropertiesService.getScriptProperties();
+      var raw    = props.getProperty('courseSettings');
+      var course = raw ? JSON.parse(raw) : DEFAULT_COURSE_SETTINGS;
+      return gasRespond({ status: 'ok', course: course }, cb);
     }
 
     // ── Public: student status tracker by roll number ─────────────
@@ -249,20 +269,24 @@ function doPost(e) {
       // ── Email notification to instructor ──────────────────────
       if (INSTRUCTOR_EMAIL) {
         try {
-          var urgentTag = data.isUrgent ? '[URGENT] ' : '';
+          var courseRaw   = PropertiesService.getScriptProperties().getProperty('courseSettings');
+          var courseConf  = courseRaw ? JSON.parse(courseRaw) : DEFAULT_COURSE_SETTINGS;
+          var sessionLbl  = courseConf.sessionLabel || 'Lab';
+          var urgentTag   = data.isUrgent ? '[URGENT] ' : '';
           MailApp.sendEmail({
             to:      INSTRUCTOR_EMAIL,
-            subject: '[ML Lab] ' + urgentTag + 'New ' + data.queryType + ' query from ' + data.name,
+            subject: '[' + courseConf.courseName + '] ' + urgentTag + 'New ' + data.queryType + ' query from ' + data.name,
             body:
               (data.isUrgent ? '\u26a0 URGENT QUERY\n\n' : '') +
               'Reference: '   + data.referenceId + '\n' +
               'Student: '     + data.name + ' (' + data.rollNumber + ')\n' +
               'Section: '     + data.section + '\n' +
-              'Lab: '         + (data.labNumber || 'N/A') + ' on ' + (data.labDate || 'N/A') + '\n' +
+              sessionLbl + ': ' + (data.labNumber || 'N/A') + ' on ' + (data.labDate || 'N/A') + '\n' +
               'Query type: '  + data.queryType + '\n\n' +
               'Description:\n' + data.description + '\n\n' +
               (attachmentUrl && attachmentUrl.indexOf('https://') === 0 ? 'Attachment: ' + attachmentUrl + '\n\n' : '') +
               'Submitted: '   + data.timestamp
+          });
           });
         } catch (mailErr) {
           // Email failed — submission still proceeds
@@ -273,21 +297,25 @@ function doPost(e) {
       // ── Confirmation email to student ──────────────────────────
       if (data.email && data.email.indexOf('@') !== -1) {
         try {
+          var courseRaw2  = PropertiesService.getScriptProperties().getProperty('courseSettings');
+          var courseConf2 = courseRaw2 ? JSON.parse(courseRaw2) : DEFAULT_COURSE_SETTINGS;
+          var sessionLbl2 = courseConf2.sessionLabel || 'Lab';
           MailApp.sendEmail({
             to:      data.email,
-            subject: '[ML Lab Query] Received — ' + data.referenceId,
+            subject: '[' + courseConf2.courseName + '] Received — ' + data.referenceId,
             body:
               'Hi ' + data.name + ',\n\n' +
               'Your query has been received. Here are the details:\n\n' +
               'Reference ID:  ' + data.referenceId + '\n' +
               'Query type:    ' + data.queryType + '\n' +
-              (data.labNumber ? 'Lab(s):        ' + data.labNumber + '\n' : '') +
+              (data.labNumber ? sessionLbl2 + '(s):  ' + data.labNumber + '\n' : '') +
               'Submitted:     ' + data.timestamp + '\n\n' +
               'You can track the status of your query at any time:\n' +
               'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
               'Enter your roll number (' + data.rollNumber + ') in the tracker at the bottom of the page.\n\n' +
               'Do not reply to this email.\n' +
-              '— QueryDesk | FAST-NUCES Islamabad'
+              '— QueryDesk | ' + courseConf2.courseName + ', FAST-NUCES Islamabad'
+          });
           });
         } catch (mailErr) {
           console.log('Student confirmation email error: ' + mailErr.toString());
@@ -315,6 +343,21 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON));
     }
 
+    // ── Save course configuration ───────────────────────────────
+    if (action === 'saveCourseSettings') {
+      var props  = PropertiesService.getScriptProperties();
+      var course = data.courseSettings || {};
+      // Validate sections is an array of strings
+      if (!Array.isArray(course.sections)) {
+        course.sections = DEFAULT_COURSE_SETTINGS.sections;
+      }
+      course.sessionCount = parseInt(course.sessionCount, 10) || DEFAULT_COURSE_SETTINGS.sessionCount;
+      props.setProperty('courseSettings', JSON.stringify(course));
+      return cors(ContentService
+        .createTextOutput(JSON.stringify({ status: 'ok' }))
+        .setMimeType(ContentService.MimeType.JSON));
+    }
+
     // ── Update status + notes ───────────────────────────────────
     if (action === 'updateStatus') {
       var result = updateRowField(data.referenceId, {
@@ -325,10 +368,12 @@ function doPost(e) {
       // ── Email student when status changes to Resolved or Rejected ─
       if (result && (data.status === 'Resolved' || data.status === 'Rejected') && data.email && data.email.indexOf('@') !== -1) {
         try {
+          var courseRaw3  = PropertiesService.getScriptProperties().getProperty('courseSettings');
+          var courseConf3 = courseRaw3 ? JSON.parse(courseRaw3) : DEFAULT_COURSE_SETTINGS;
           var resolved = data.status === 'Resolved';
           MailApp.sendEmail({
             to:      data.email,
-            subject: '[ML Lab Query] ' + data.status + ' — ' + data.referenceId,
+            subject: '[' + courseConf3.courseName + '] ' + data.status + ' — ' + data.referenceId,
             body:
               'Hi ' + (data.name || 'Student') + ',\n\n' +
               'Your query ' + data.referenceId + ' has been marked as ' + data.status + '.\n\n' +
@@ -339,7 +384,8 @@ function doPost(e) {
               'Track all your queries:\n' +
               'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
               'Do not reply to this email.\n' +
-              '— QueryDesk | FAST-NUCES Islamabad'
+              '— QueryDesk | ' + courseConf3.courseName + ', FAST-NUCES Islamabad'
+          });
           });
         } catch (mailErr) {
           console.log('Status notification email error: ' + mailErr.toString());
