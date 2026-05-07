@@ -287,7 +287,6 @@ function doPost(e) {
               (attachmentUrl && attachmentUrl.indexOf('https://') === 0 ? 'Attachment: ' + attachmentUrl + '\n\n' : '') +
               'Submitted: '   + data.timestamp
           });
-          });
         } catch (mailErr) {
           // Email failed — submission still proceeds
           console.log('Email error: ' + mailErr.toString());
@@ -315,7 +314,6 @@ function doPost(e) {
               'Enter your roll number (' + data.rollNumber + ') in the tracker at the bottom of the page.\n\n' +
               'Do not reply to this email.\n' +
               '— QueryDesk | ' + courseConf2.courseName + ', FAST-NUCES Islamabad'
-          });
           });
         } catch (mailErr) {
           console.log('Student confirmation email error: ' + mailErr.toString());
@@ -385,7 +383,6 @@ function doPost(e) {
               'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
               'Do not reply to this email.\n' +
               '— QueryDesk | ' + courseConf3.courseName + ', FAST-NUCES Islamabad'
-          });
           });
         } catch (mailErr) {
           console.log('Status notification email error: ' + mailErr.toString());
