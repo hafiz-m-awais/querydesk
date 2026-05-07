@@ -189,13 +189,25 @@ function doPost(e) {
       var attachmentUrl = '';
       if (data.attachmentData && data.attachmentName) {
         try {
+          // MIME allowlist — only safe document/image types
+          var ALLOWED_MIMES = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain'
+          ];
+          var mimeType = (data.attachmentMimeType || '').toLowerCase().split(';')[0].trim();
+          if (ALLOWED_MIMES.indexOf(mimeType) === -1) {
+            attachmentUrl = 'REJECTED: disallowed file type (' + mimeType + ')';
+          } else {
           var folderName = 'ML Lab Query Attachments';
           var folders    = DriveApp.getFoldersByName(folderName);
           var folder     = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
           var bytes      = Utilities.base64Decode(data.attachmentData);
           var blob       = Utilities.newBlob(
                              bytes,
-                             data.attachmentMimeType || 'application/octet-stream',
+                             mimeType || 'application/octet-stream',
                              (data.referenceId || 'file') + '_' + data.attachmentName
                            );
           var driveFile  = folder.createFile(blob);
@@ -204,6 +216,7 @@ function doPost(e) {
             DriveApp.Permission.VIEW
           );
           attachmentUrl = driveFile.getUrl();
+          } // end MIME allowlist else
         } catch (attachErr) {
           // Drive upload failed — submission still proceeds without attachment
           console.log('Drive upload error: ' + attachErr.toString());
@@ -258,6 +271,30 @@ function doPost(e) {
         }
       }
 
+      // ── Confirmation email to student ──────────────────────────
+      if (data.email && data.email.indexOf('@') !== -1) {
+        try {
+          MailApp.sendEmail({
+            to:      data.email,
+            subject: '[ML Lab Query] Received — ' + data.referenceId,
+            body:
+              'Hi ' + data.name + ',\n\n' +
+              'Your query has been received. Here are the details:\n\n' +
+              'Reference ID:  ' + data.referenceId + '\n' +
+              'Query type:    ' + data.queryType + '\n' +
+              (data.labNumber ? 'Lab(s):        ' + data.labNumber + '\n' : '') +
+              'Submitted:     ' + data.timestamp + '\n\n' +
+              'You can track the status of your query at any time:\n' +
+              'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
+              'Enter your roll number (' + data.rollNumber + ') in the tracker at the bottom of the page.\n\n' +
+              'Do not reply to this email.\n' +
+              '— ML for Business Analytics, FAST-NUCES Islamabad'
+          });
+        } catch (mailErr) {
+          console.log('Student confirmation email error: ' + mailErr.toString());
+        }
+      }
+
       return cors(ContentService
         .createTextOutput(JSON.stringify({ status: 'ok', referenceId: data.referenceId }))
         .setMimeType(ContentService.MimeType.JSON));
@@ -285,6 +322,31 @@ function doPost(e) {
         15: data.status || 'Pending',
         16: data.notes  || ''
       });
+
+      // ── Email student when status changes to Resolved or Rejected ─
+      if (result && (data.status === 'Resolved' || data.status === 'Rejected') && data.email && data.email.indexOf('@') !== -1) {
+        try {
+          var resolved = data.status === 'Resolved';
+          MailApp.sendEmail({
+            to:      data.email,
+            subject: '[ML Lab Query] ' + data.status + ' — ' + data.referenceId,
+            body:
+              'Hi ' + (data.name || 'Student') + ',\n\n' +
+              'Your query ' + data.referenceId + ' has been marked as ' + data.status + '.\n\n' +
+              (data.notes ? 'Instructor note:\n' + data.notes + '\n\n' : '') +
+              (resolved
+                ? 'Your query has been resolved. If you have further questions, please raise a new query.\n\n'
+                : 'Your query could not be accommodated. If you believe this is an error, please speak to your instructor directly.\n\n') +
+              'Track all your queries:\n' +
+              'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
+              'Do not reply to this email.\n' +
+              '— ML for Business Analytics, FAST-NUCES Islamabad'
+          });
+        } catch (mailErr) {
+          console.log('Status notification email error: ' + mailErr.toString());
+        }
+      }
+
       return cors(ContentService
         .createTextOutput(JSON.stringify({ status: result ? 'ok' : 'not_found' }))
         .setMimeType(ContentService.MimeType.JSON));

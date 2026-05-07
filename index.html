@@ -173,6 +173,9 @@ textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
 </style>
 </head>
 <body>
+<div id="offline-banner" style="display:none;position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;text-align:center;font-size:13px;font-weight:600;padding:10px 16px;z-index:9999;letter-spacing:.01em">
+  \u26a0\ufe0f You are offline &mdash; check your connection before submitting
+</div>
 <div class="page-wrap">
   <div class="top-bar">
     <span class="uni">FAST-NUCES &middot; Islamabad</span>
@@ -543,7 +546,15 @@ function buildTypeSection(key) {
     body.appendChild(nf);
   }
   var df=document.createElement('div'); df.style.marginTop='12px';
-  df.innerHTML='<div class="field" id="f-desc-'+key+'"><label>Description for this query <span class="req">*</span></label><textarea id="desc-'+key+'" placeholder="Describe the issue \u2014 what happened, relevant dates, what you expect\u2026"></textarea><span class="err" id="err-desc-'+key+'">Please write at least 15 characters.</span></div>';
+  df.innerHTML='<div class="field" id="f-desc-'+key+'">'
+    +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">'
+    +'<label style="margin:0">Description for this query <span class="req">*</span></label>'
+    +'<span id="cnt-'+key+'" style="font-size:11px;color:var(--th)">0\u202F/\u202F15\u00a0min</span>'
+    +'</div>'
+    +'<textarea id="desc-'+key+'" placeholder="Describe the issue \u2014 what happened, relevant dates, what you expect\u2026"'
+    +' oninput="updateCounter(\''+key+'\',this.value.length)"></textarea>'
+    +'<span class="err" id="err-desc-'+key+'">Please write at least 15 characters.</span>'
+    +'</div>';
   body.appendChild(df);
   sec.appendChild(body);
   return sec;
@@ -723,6 +734,12 @@ function showFile(input){
   reader.readAsDataURL(file);
 }
 function showErr(id){var f=document.getElementById('f-'+id);if(f)f.classList.add('field-invalid');var e=document.getElementById('err-'+id);if(e)e.style.display='block';}
+function updateCounter(key,len){
+  var el=document.getElementById('cnt-'+key);
+  if(!el)return;
+  if(len<15){el.textContent=len+'\u202F/\u202F15\u00a0min';el.style.color='var(--th)';}
+  else{el.textContent=len+'\u00a0chars';el.style.color='var(--g1)';}
+}
 function checkRate(){
   var key='mllab_v2',now=Date.now();
   var times=JSON.parse(localStorage.getItem(key)||'[]').filter(function(t){return now-t<3600000;});
@@ -754,6 +771,12 @@ function resetForm(){
   document.querySelectorAll('.type-card').forEach(function(c){c.classList.remove('selected');});
   document.querySelectorAll('.field-invalid').forEach(function(f){f.classList.remove('field-invalid');});
 }
+
+// OFFLINE DETECTION
+function syncOfflineBanner(){document.getElementById('offline-banner').style.display=navigator.onLine?'none':'block';}
+window.addEventListener('offline',syncOfflineBanner);
+window.addEventListener('online',syncOfflineBanner);
+syncOfflineBanner();
 
 loadSettings();
 </script>
