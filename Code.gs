@@ -241,7 +241,7 @@ function doPost(e) {
             to:      INSTRUCTOR_EMAIL,
             subject: '[ML Lab] ' + urgentTag + 'New ' + data.queryType + ' query from ' + data.name,
             body:
-              (data.isUrgent ? '⚠ URGENT QUERY\n\n' : '') +
+              (data.isUrgent ? '\u26a0 URGENT QUERY\n\n' : '') +
               'Reference: '   + data.referenceId + '\n' +
               'Student: '     + data.name + ' (' + data.rollNumber + ')\n' +
               'Section: '     + data.section + '\n' +
