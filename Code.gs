@@ -287,7 +287,7 @@ function doPost(e) {
               'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
               'Enter your roll number (' + data.rollNumber + ') in the tracker at the bottom of the page.\n\n' +
               'Do not reply to this email.\n' +
-              '— ML Lab Query Portal | FAST-NUCES Islamabad'
+              '— QueryDesk | FAST-NUCES Islamabad'
           });
         } catch (mailErr) {
           console.log('Student confirmation email error: ' + mailErr.toString());
@@ -339,7 +339,7 @@ function doPost(e) {
               'Track all your queries:\n' +
               'https://hafiz-m-awais.github.io/mllab-query/\n\n' +
               'Do not reply to this email.\n' +
-              '— ML Lab Query Portal | FAST-NUCES Islamabad'
+              '— QueryDesk | FAST-NUCES Islamabad'
           });
         } catch (mailErr) {
           console.log('Status notification email error: ' + mailErr.toString());
