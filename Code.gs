@@ -30,8 +30,13 @@ var HEADERS = [
   'Reference ID', 'Timestamp', 'Email', 'Name', 'Roll Number',
   'Section', 'Lab Number', 'Lab Date', 'Query Type', 'Description',
   'Extra Date', 'Marks Awarded', 'Marks Expected', 'Issue / Reason',
-  'Request Type', 'Status', 'Instructor Notes', 'Attachment URL'
+  'Request Type', 'Status', 'Instructor Notes', 'Attachment URL', 'Urgent'
 ];
+
+// ── INSTRUCTOR_EMAIL: set in GAS Script Properties ────────────────
+// Project Settings → Script Properties → Key: INSTRUCTOR_EMAIL
+// Value: your.email@nu.edu.pk
+var INSTRUCTOR_EMAIL = PropertiesService.getScriptProperties().getProperty('INSTRUCTOR_EMAIL') || '';
 
 // ── CORS helper ──────────────────────────────────────────────────
 function cors(output) {
@@ -129,7 +134,8 @@ function doGet(e) {
           request:       row[14] || '',
           status:        row[15] || 'Pending',
           notes:         row[16] || '',
-          attachmentUrl: row[17] || ''
+          attachmentUrl: row[17] || '',
+          isUrgent:      row[18] === true || row[18] === 'TRUE' || row[18] === 'Yes'
         };
       });
 
@@ -223,25 +229,34 @@ function doPost(e) {
         data.request       || '',
         data.status        || 'Pending',
         '',            // notes — empty on submission
-        attachmentUrl  // Google Drive URL if a file was attached
+        attachmentUrl, // Google Drive URL if a file was attached
+        data.isUrgent ? 'Yes' : 'No'  // urgent flag
       ]);
 
-      // ── Optional email notification to instructor ─────────────
-      // Uncomment and fill in your email below to receive alerts:
-      /*
-      MailApp.sendEmail({
-        to:      'your.email@nu.edu.pk',
-        subject: '[ML Lab] New ' + data.queryType + ' query from ' + data.name,
-        body:
-          'Reference: '   + data.referenceId + '\n' +
-          'Student: '     + data.name + ' (' + data.rollNumber + ')\n' +
-          'Section: '     + data.section + '\n' +
-          'Lab: '         + data.labNumber + ' on ' + data.labDate + '\n' +
-          'Query type: '  + data.queryType + '\n\n' +
-          'Description:\n' + data.description + '\n\n' +
-          'Submitted: '   + data.timestamp
-      });
-      */
+      // ── Email notification to instructor ──────────────────────
+      if (INSTRUCTOR_EMAIL) {
+        try {
+          var urgentTag = data.isUrgent ? '[URGENT] ' : '';
+          MailApp.sendEmail({
+            to:      INSTRUCTOR_EMAIL,
+            subject: '[ML Lab] ' + urgentTag + 'New ' + data.queryType + ' query from ' + data.name,
+            body:
+              (data.isUrgent ? '⚠ URGENT QUERY\n\n' : '') +
+              'Reference: '   + data.referenceId + '\n' +
+              'Student: '     + data.name + ' (' + data.rollNumber + ')\n' +
+              'Section: '     + data.section + '\n' +
+              'Lab: '         + (data.labNumber || 'N/A') + ' on ' + (data.labDate || 'N/A') + '\n' +
+              'Query type: '  + data.queryType + '\n\n' +
+              'Description:\n' + data.description + '\n\n' +
+              (attachmentUrl && attachmentUrl.indexOf('https://') === 0 ? 'Attachment: ' + attachmentUrl + '\n\n' : '') +
+              'Submitted: '   + data.timestamp + '\n' +
+              'Admin panel: https://hafiz-m-awais.github.io/mllab-query/admin.html'
+          });
+        } catch (mailErr) {
+          // Email failed — submission still proceeds
+          console.log('Email error: ' + mailErr.toString());
+        }
+      }
 
       return cors(ContentService
         .createTextOutput(JSON.stringify({ status: 'ok', referenceId: data.referenceId }))

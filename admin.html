@@ -136,6 +136,7 @@
   .s-Resolved  { background: var(--green-light);  color: var(--green-dark); }
   .s-Rejected  { background: var(--red-light);    color: var(--red); }
   .s-Reviewing { background: var(--blue-light);   color: var(--blue-dark); }
+  .urgent-badge { display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:#fee2e2;color:#b91c1c;white-space:nowrap; }
 
   /* ══ Type badges ══ */
   .t-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
@@ -725,7 +726,7 @@ function renderTable() {
     var labDisplay = r.labNumber ? esc(r.labNumber) : '<span style="color:var(--text-hint)">—</span>';
     return '<tr>' +
       '<td><span class="ref-id">' + esc(r.referenceId) + '</span></td>' +
-      '<td><div class="student-name">' + esc(r.name) + '</div><div class="student-roll">' + esc(r.rollNumber) + ' · ' + esc(r.email) + '</div></td>' +
+      '<td><div class="student-name">' + esc(r.name) + (r.isUrgent ? ' <span class="urgent-badge">&#128308; Urgent</span>' : '') + '</div><div class="student-roll">' + esc(r.rollNumber) + ' · ' + esc(r.email) + '</div></td>' +
       '<td>' + esc(r.section) + '</td>' +
       '<td class="hide-sm" style="font-size:12px">' + labDisplay + '</td>' +
       '<td class="hide-sm" style="font-size:12px;color:var(--text-sec)">' + esc(r.labDate || '—') + '</td>' +
@@ -748,6 +749,15 @@ function openModal(refId) {
 
   var typeLabel = TYPE_LABELS[r.queryType] || capitalize(r.queryType);
   document.getElementById('m-title').textContent = 'Query — ' + r.referenceId;
+  if (r.isUrgent) {
+    var urgBadge = document.createElement('span');
+    urgBadge.className = 'urgent-badge';
+    urgBadge.style.marginLeft = '8px';
+    urgBadge.textContent = '\uD83D\uDD34 Urgent';
+    var titleEl = document.getElementById('m-title');
+    titleEl.textContent = 'Query \u2014 ' + r.referenceId;
+    titleEl.appendChild(urgBadge);
+  }
   document.getElementById('m-desc').textContent  = r.description || '(no description)';
   document.getElementById('m-status').value      = r.status || 'Pending';
   document.getElementById('m-notes').value       = r.notes  || '';
@@ -833,11 +843,11 @@ function deleteQuery() {
 function exportCSV() {
   var headers = ['Reference ID','Timestamp','Email','Name','Roll Number',
     'Section','Lab Number','Lab Date','Query Type','Description',
-    'Extra Date','Marks Awarded','Marks Expected','Issue','Request','Status','Notes','Attachment URL'];
+    'Extra Date','Marks Awarded','Marks Expected','Issue','Request','Status','Notes','Attachment URL','Urgent'];
   var rows = allRows.map(function(r) {
     return [r.referenceId, r.timestamp, r.email, r.name, r.rollNumber,
       r.section, r.labNumber, r.labDate, r.queryType, r.description,
-      r.extraDate, r.marksAwarded, r.marksExpected, r.issue, r.request, r.status, r.notes, r.attachmentUrl || ''
+      r.extraDate, r.marksAwarded, r.marksExpected, r.issue, r.request, r.status, r.notes, r.attachmentUrl || '', r.isUrgent ? 'Yes' : 'No'
     ].map(function(v) { return '"' + (v||'').replace(/"/g, '""') + '"'; });
   });
 
