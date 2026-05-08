@@ -5,7 +5,7 @@
 var _gsParam   = new URLSearchParams(location.search).get('gs');
 var SCRIPT_URL = _gsParam
   ? decodeURIComponent(_gsParam)
-  : 'https://script.google.com/macros/s/AKfycbwIXl9VGefgmE-JGYftiqCduDcZ8wlFngKPMpGW-odaJ747pa5MDZttwfeG_Yr9hfoC8w/exec';
+  : 'https://script.google.com/a/macros/isb.nu.edu.pk/s/AKfycbyObo6628vqIzHgnNgdvqX2dM2QDaCu9QY3yRsZOx-hSuZIom_0I15VLvExeQZPnpKA/exec';
 
 // JSONP GET — bypasses CORS on GAS deployments
 function jsonpGet(url) {
