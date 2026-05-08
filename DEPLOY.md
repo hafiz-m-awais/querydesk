@@ -1,183 +1,184 @@
-# ML Lab Query System — Deployment Guide
-## FAST-NUCES Islamabad · ML for Business Analytics
+﻿# QueryDesk — Step-by-Step Deployment Guide
+
+> **Repo:** https://github.com/hafiz-m-awais/querydesk  
+> **Stack:** Google Apps Script (backend) · Google Sheets (database) · GitHub Pages (hosting)  
+> No server, no paid services — everything runs for free.
 
 ---
 
-## What you get
+## Architecture
 
-| File        | Purpose |
-|-------------|---------|
-| `index.html`| Student-facing query form |
-| `admin.html`| Your private admin panel (view + update status) |
-| `Code.gs`   | Google Apps Script backend (paste into Google Sheets) |
-
----
-
-## STEP 1 — Set up Google Sheets
-
-1. Go to **sheets.google.com** → click **Blank**
-2. Rename the spreadsheet: **"ML Lab Queries"**
-3. Leave it open — you'll come back here
-
----
-
-## STEP 2 — Set up Apps Script
-
-1. In your spreadsheet: **Extensions → Apps Script**
-2. Delete everything in the editor
-3. Open `Code.gs` from this folder and **paste the entire contents**
-4. At the top of the script, change:
-   ```
-   var ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD_HERE';
-   ```
-   to a strong password you'll remember, e.g.:
-   ```
-   var ADMIN_PASSWORD = 'FastML2025!';
-   ```
-5. Press **Ctrl+S** (or ⌘+S), name the project **"MLLabQuery"**
+```
+Student browser                   Admin browser
+      |                                 |
+      |  POST (no-cors)   GET (JSONP)   |
+      +------------+----------+---------+
+                   |          |
+         Google Apps Script  (/exec)
+                   |
+           +-------+-------+-------+
+           |               |       |
+       G. Sheets       G. Drive  MailApp
+       (Queries tab)   (files)   (alerts)
+```
 
 ---
 
-## STEP 3 — Deploy as Web App
+## Files you will touch
 
-1. Click **Deploy** (top right) → **New deployment**
-2. Click the **gear icon ⚙** next to "Select type" → choose **Web app**
-3. Fill in:
-   - **Description:** ML Lab Query API
-   - **Execute as:** Me (your Google account)
+| File            | What to change |
+|-----------------|---------------|
+| `gas/Config.gs` | Course defaults (optional — can use admin panel instead) |
+| `js/api.js`     | Paste your GAS deployment URL |
+| `gas/*.gs`      | Upload all 6 files to Apps Script editor |
+
+---
+
+## STEP 1 — Create a Google Sheet
+
+1. Go to https://sheets.google.com -> **Blank spreadsheet**
+2. Rename it, e.g. **"QueryDesk Spring 2026"**
+3. Leave the first tab as-is (script creates the "Queries" tab automatically)
+
+---
+
+## STEP 2 — Set up Google Apps Script
+
+1. In your Sheet: **Extensions -> Apps Script**
+2. Delete the default `Code.gs` file (right-click -> Delete)
+3. Create **6 new script files** — click **+** (Files) -> Script for each:
+
+   | New file name  | Paste contents of       |
+   |---------------|------------------------|
+   | `Config`      | `gas/Config.gs`        |
+   | `GetHandlers` | `gas/GetHandlers.gs`   |
+   | `PostHandlers`| `gas/PostHandlers.gs`  |
+   | `SheetUtils`  | `gas/SheetUtils.gs`    |
+   | `DriveUtils`  | `gas/DriveUtils.gs`    |
+   | `EmailUtils`  | `gas/EmailUtils.gs`    |
+
+4. Press **Ctrl+S** after each. Name the project **"QueryDesk"**
+
+---
+
+## STEP 3 — Set script properties (password + email)
+
+Script Properties store secrets securely — they never appear in source code.
+
+1. Apps Script editor -> **Project Settings** (gear icon, left sidebar)
+2. Scroll to **Script Properties** -> **Add script property**
+3. Add two properties:
+
+   | Property           | Value                                      |
+   |--------------------|-------------------------------------------|
+   | `ADMIN_PASSWORD`   | Strong password for the admin panel login |
+   | `INSTRUCTOR_EMAIL` | Your email (receives query alert emails)  |
+
+4. Click **Save script properties**
+
+---
+
+## STEP 4 — Deploy as Web App
+
+1. Click **Deploy** (top right) -> **New deployment**
+2. Click the gear next to "Select type" -> **Web app**
+3. Set:
+   - **Execute as:** Me
    - **Who has access:** Anyone
-4. Click **Deploy**
-5. Google will ask you to **Authorize** — click through and allow
-6. **Copy the Web App URL** — it looks like:
-   `https://script.google.com/macros/s/AKfy.../exec`
+4. Click **Deploy** -> authorize when prompted
+5. **Copy the Web App URL** (looks like `https://script.google.com/macros/s/AKfycbw.../exec`)
 
 ---
 
-## STEP 4 — Paste the URL into both HTML files
+## STEP 5 — Paste the URL into js/api.js
 
-Open **`index.html`** and find:
+Open `js/api.js` and replace the URL on line 7-8:
+
+```js
+var SCRIPT_URL = _gsParam
+  ? decodeURIComponent(_gsParam)
+  : 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec';
 ```
-const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+
+Save the file.
+
+---
+
+## STEP 6 — Push updated URL to GitHub
+
+```bash
+git add js/api.js
+git commit -m "config: set GAS deployment URL"
+git push
 ```
-Replace with your URL.
-
-Open **`admin.html`** and find both:
-```
-const SCRIPT_URL     = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
-const ADMIN_PASSWORD = 'YOUR_ADMIN_PASSWORD_HERE';
-```
-Replace with your URL **and the same password** you set in Code.gs.
 
 ---
 
-## STEP 5 — Host on GitHub Pages (free, 2 minutes)
+## STEP 7 — Enable GitHub Pages
 
-1. Go to **github.com** → sign in or create free account
-2. Click **New repository**
-   - Name: `mllab-queries`
-   - Visibility: **Private** (recommended)
-   - Click **Create repository**
-3. Upload **`index.html`** and **`admin.html`** (drag and drop)
-4. Go to **Settings → Pages**
-5. Source: **Deploy from a branch** → Branch: **main** → **Save**
-6. Your URLs will be:
-   - Students: `https://yourusername.github.io/mllab-queries/`
-   - Admin:    `https://yourusername.github.io/mllab-queries/admin.html`
+1. Go to https://github.com/hafiz-m-awais/querydesk/settings/pages
+2. **Source:** Deploy from a branch
+3. **Branch:** main / (root) -> **Save**
 
----
+Live URLs (ready in ~1 minute):
 
-## STEP 6 — Share with students
-
-- Post the **student URL** on LMS / WhatsApp group
-- Keep the **admin URL** private (password protected)
-- Bookmark admin.html for yourself
+| Page             | URL                                                              |
+|------------------|------------------------------------------------------------------|
+| Student form     | https://hafiz-m-awais.github.io/querydesk/                       |
+| Admin panel      | https://hafiz-m-awais.github.io/querydesk/admin.html             |
+| Course directory | https://hafiz-m-awais.github.io/querydesk/directory.html         |
 
 ---
 
-## Viewing submissions (Admin panel)
+## STEP 8 — Configure your course (admin panel)
 
-1. Open `admin.html` in your browser
-2. Enter your admin password
-3. All submissions appear in the table
-4. Click **Review** on any query to:
-   - See full details
-   - Change status: **Pending → Reviewing → Resolved / Rejected**
-   - Add instructor notes
-5. Use filters to sort by section, lab, status, or query type
-6. Click **Export CSV** to download all data for record-keeping
-
----
-
-## Enabling instructor email alerts (optional)
-
-In `Code.gs`, find the commented block:
-```javascript
-/*
-MailApp.sendEmail({
-  to: 'your.email@nu.edu.pk',
-  ...
-*/
-```
-Uncomment it and fill in your email. You'll get an email every time a student submits.
+1. Open the admin panel URL above
+2. Log in with your `ADMIN_PASSWORD`
+3. Click **Settings**
+4. Fill in:
+   - **Course Name** and **Term**
+   - **Sections** (comma-separated, e.g. `BSBA-6A, BSBA-6B, MSBA`)
+   - **University Name** (shown in student form top-bar)
+   - **Email Domain** (e.g. `nu.edu.pk`)
+   - **Roll Format** (regex, e.g. `\d{2}[IKik]-\d{4}` — leave blank for any format)
+   - **Submissions Open** toggle and **Announcement** text
+5. Click **Save settings**
 
 ---
 
-## Security summary
+## STEP 9 — Test end-to-end
 
-| Feature | Detail |
-|---------|--------|
-| Email validation | Only i/k + year 20–26 + 4 digits + @isb.nu.edu.pk or @nu.edu.pk |
-| Roll number format | 23I-1234 or 23K-1234 |
-| Honeypot field | Hidden field blocks simple bots |
-| Rate limiting | Max 3 submissions per hour per device |
-| Admin panel | Password protected — only you can view/update |
-| Google Sheets | Only accessible from your Google account |
+1. Open the **student form** and submit a test query
+2. Check your **Google Sheet** — a new row should appear in the "Queries" tab
+3. Open the **admin panel** -> the query appears in the table
+4. Click **Review** -> change status to Resolved -> Save
+5. Check your inbox for the notification email (if INSTRUCTOR_EMAIL is set)
 
 ---
 
-## Troubleshooting
+## Redeploy GAS after code changes
 
-**Submissions not appearing in Sheet?**
-- Re-deploy the Apps Script as a new deployment (not redeploy — create new)
-- Make sure "Who has access" is set to **Anyone**
+Whenever you edit any `gas/*.gs` file you must create a **new deployment** (not redeploy):
 
-**Admin panel shows "Network error"?**
-- Check that SCRIPT_URL is correct in admin.html
-- Check that the Apps Script is deployed (not just saved)
-
-**Want to change sections or labs?**
-- Edit the `<option>` tags in `index.html` and `admin.html` directly
+1. Apps Script -> **Deploy -> New deployment** (same settings)
+2. Copy the **new URL** -> update `js/api.js` -> commit & push
 
 ---
 
-## Multi-instructor deployment (FAST-NUCES department rollout)
+## Multi-instructor setup
 
-Each instructor runs their **own independent GAS deployment**. The shared GitHub Pages frontend connects to whichever deployment is specified in the `?gs=` URL parameter.
+Each instructor gets their own Google Sheet + GAS deployment. The shared frontend
+selects the right backend via the `?gs=` URL parameter.
 
-### How it works
+**Per-instructor setup:**
+1. Follow Steps 1-4 above to get a personal GAS URL
+2. Encode it in a browser console: `encodeURIComponent('https://script.google.com/macros/s/.../exec')`
+3. Student link: `https://hafiz-m-awais.github.io/querydesk/?gs=ENCODED_URL`
+4. Admin link:   `https://hafiz-m-awais.github.io/querydesk/admin.html?gs=ENCODED_URL`
 
-| URL | Who uses it |
-|---|---|
-| `https://yourusername.github.io/mllab-query/directory.html` | Students browse all courses |
-| `https://yourusername.github.io/mllab-query/index.html?gs=INSTRUCTOR_URL` | Students submit to a specific course |
-| `https://yourusername.github.io/mllab-query/admin.html?gs=INSTRUCTOR_URL` | Instructor manages their own queries |
+**Add course to directory.html** — find the `COURSES` array and add:
 
-`INSTRUCTOR_URL` is the GAS deployment URL (`https://script.google.com/macros/s/AKfy.../exec`) **URL-encoded**. Get the encoded version by running this in your browser console: `encodeURIComponent('YOUR_GAS_URL')`.
-
-### Steps for a new instructor
-
-1. Follow **STEP 1 → STEP 3** of this guide (Sheet + Apps Script + Deploy) to get a GAS deployment URL
-2. Skip STEP 4 (no need to edit HTML files) — send your GAS URL to the IT coordinator
-3. Open your admin panel: `admin.html?gs=YOUR_ENCODED_GAS_URL` → log in → **Settings**
-4. Fill in Course Name, Term, Sections, Session Count, Email Domain → Save
-5. Share the student link: `index.html?gs=YOUR_ENCODED_GAS_URL`
-6. Bookmark your admin link
-
-### Adding a course to the directory
-
-Open `directory.html` and add an entry to the `COURSES` array near the top of the `<script>` block:
-
-```javascript
+```js
 {
   name:       'Data Structures',
   instructor: 'Dr. Fatima',
@@ -188,12 +189,25 @@ Open `directory.html` and add an entry to the `COURSES` array near the top of th
 }
 ```
 
-Commit and push — the directory page updates immediately.
-
-### Email domain for non-NUCES courses
-
-In the admin panel **Settings → Student Email Domain**, change `nu.edu.pk` to your university's domain (e.g. `nust.edu.pk`). The student form will accept any email ending in that domain.
+Commit and push — the directory updates immediately.
 
 ---
 
-*Generated for Awais — FAST-NUCES Islamabad, Department of Management*
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Submissions not in Sheet | Create a **new** deployment; ensure "Who has access: Anyone" |
+| Admin shows "Network error" | Check SCRIPT_URL in `js/api.js` is correct |
+| "Auth failed" on login | Verify `ADMIN_PASSWORD` script property matches what you type |
+| Student email rejected | Change **Email Domain** in admin Settings |
+| Roll number rejected | Clear **Roll Format** in Settings to accept any format |
+| Attachment not saving | Re-authorize: Deploy -> Manage deployments -> Authorize |
+
+---
+
+## Security
+
+- Password stored as a **Script Property** — never in source code or git
+- `.env` is gitignored
+- All data lives in **your** Google account only
