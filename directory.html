@@ -134,23 +134,16 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  COURSE DIRECTORY — maintained by IT coordinator
-//  To add a new instructor:
-//    1. Ask the instructor for their GAS deployment URL
-//    2. Add a new object to the COURSES array below
-//    3. Commit and push — the directory updates immediately
+//  COURSE DIRECTORY
 //
-//  Each course object:
-//  {
-//    name:       'Course Name',
-//    instructor: 'Dr. Name',
-//    dept:       'CS' | 'BSBA' | 'MSBA' | etc  (used for grouping)
-//    term:       'Spring 2026',
-//    sections:   ['CS-4A', 'CS-4B'],
-//    gasUrl:     'https://script.google.com/macros/s/AKfy.../exec'
-//  }
+//  REGISTRY_URL — set this once after deploying gas_registry/.
+//  When set, courses are fetched live from the registry Google Sheet.
+//  When empty, falls back to the COURSES array below.
 // ═══════════════════════════════════════════════════════════════
 
+var REGISTRY_URL = ''; // ← paste your registry GAS /exec URL here
+
+// ── Fallback / seed courses (used when REGISTRY_URL is empty) ──
 var COURSES = [
   {
     name:       'ML for Business Analytics',
@@ -160,29 +153,56 @@ var COURSES = [
     sections:   ['BSBA-6A', 'BSBA-6B', 'MSBA'],
     gasUrl:     'https://script.google.com/macros/s/AKfycbwIXl9VGefgmE-JGYftiqCduDcZ8wlFngKPMpGW-odaJ747pa5MDZttwfeG_Yr9hfoC8w/exec'
   }
-  // ── Add new courses below this line ──────────────────────────
-  // {
-  //   name:       'Data Structures',
-  //   instructor: 'Dr. Fatima',
-  //   dept:       'CS',
-  //   term:       'Spring 2026',
-  //   sections:   ['CS-4A', 'CS-4B'],
-  //   gasUrl:     'https://script.google.com/macros/s/AKfycbx.../exec'
-  // },
 ];
 
+// ── JSONP helper (inline — directory.html doesn't load api.js) ──
+function jsonpGet(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = '__dirJp' + Date.now() + Math.random().toString(36).slice(2, 7);
+    var script = null;
+    var timer  = setTimeout(function() { cleanup(); reject(new Error('Timeout')); }, 10000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    script = document.createElement('script');
+    script.onerror = function() { cleanup(); reject(new Error('Failed to load')); };
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    document.head.appendChild(script);
+  });
+}
+
+// ── Entry point — fetch from registry or fall back to COURSES ───
+function fetchAndRender() {
+  if (!REGISTRY_URL) { render(COURSES); return; }
+
+  var dir = document.getElementById('directory');
+  dir.innerHTML = '<div class="empty" style="padding:2rem;color:var(--th)">Loading courses…</div>';
+
+  jsonpGet(REGISTRY_URL + '?action=listCourses')
+    .then(function(data) {
+      var courses = (data.ok && data.courses && data.courses.length)
+        ? data.courses
+        : COURSES; // fallback when registry is empty
+      render(courses);
+    })
+    .catch(function() { render(COURSES); });
+}
+
 // ── Group courses by term then render ───────────────────────────
-function render() {
+function render(courses) {
   var dir = document.getElementById('directory');
 
-  if (!COURSES.length) {
-    dir.innerHTML = '<div class="empty">No courses listed yet.<br><span style="font-size:12px">Contact your IT coordinator to be added to this directory.</span></div>';
+  if (!courses || !courses.length) {
+    dir.innerHTML = '<div class="empty">No courses listed yet.<br><span style="font-size:12px">Instructors can register at <a href="setup.html" style="color:var(--g1)">setup.html</a></span></div>';
     return;
   }
 
   // Group by term
   var byTerm = {};
-  COURSES.forEach(function(c) {
+  courses.forEach(function(c) {
     var t = c.term || 'Current Term';
     if (!byTerm[t]) byTerm[t] = [];
     byTerm[t].push(c);
@@ -229,7 +249,7 @@ function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-render();
+fetchAndRender();
 </script>
 </body>
 </html>

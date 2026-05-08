@@ -177,6 +177,32 @@ body {
 }
 .snippet-copy-btn:hover { background: rgba(255,255,255,.2); }
 
+/* ── Registration form ───────────────────────────────────────────── */
+.reg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.reg-grid .full { grid-column: 1 / -1; }
+.reg-label { font-size: 11px; font-weight: 700; color: var(--ts); display: block;
+  margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+.reg-label span { font-weight: 400; color: var(--th); font-style: italic; }
+.reg-input {
+  width: 100%; padding: 9px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--r); font-size: 13px; background: var(--white);
+  color: var(--text); outline: none; font-family: inherit; transition: border-color .15s;
+}
+.reg-input:focus { border-color: var(--g1); }
+.reg-submit-btn {
+  margin-top: 14px; padding: 11px 24px;
+  background: var(--g1); color: #fff; border: none; border-radius: var(--r);
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s;
+}
+.reg-submit-btn:hover { background: var(--g2); }
+.reg-submit-btn:disabled { background: var(--th); cursor: not-allowed; }
+.reg-result {
+  margin-top: 12px; padding: 11px 15px; border-radius: var(--r);
+  font-size: 13px; display: none;
+}
+.reg-result.ok  { background: var(--gl); border: 1px solid var(--gm); color: var(--g2); }
+.reg-result.err { background: #fff0f0; border: 1px solid #f5c6c6; color: #b00; }
+
 /* ── Responsive ─────────────────────────────────────────────────── */
 @media (max-width: 520px) {
   .header-card { padding: 1.5rem; }
@@ -373,11 +399,52 @@ body {
 
         <div class="divider"></div>
 
-        <div class="link-label">Want to appear in the course directory?</div>
-        <p style="margin-bottom:8px">Send the snippet below to your IT coordinator — they add one line to <code>directory.html</code> and push. Fill in your details first.</p>
-        <div class="snippet-wrap">
-          <button class="snippet-copy-btn" onclick="copySnippet(this)">Copy</button>
-          <div class="snippet-box" id="dir-snippet"></div>
+        <!-- ── Self-service registration (shown when REGISTRY_URL is set) ── -->
+        <div id="reg-section" style="display:none">
+          <div class="link-label">Register in the course directory</div>
+          <p style="margin-bottom:2px;font-size:13px;color:var(--ts)">Fill in your details — your course will appear in the shared directory after approval.</p>
+          <div class="reg-grid">
+            <div class="full">
+              <label class="reg-label" for="r-name">Course name <span>*</span></label>
+              <input class="reg-input" id="r-name" placeholder="e.g. Data Structures"/>
+            </div>
+            <div>
+              <label class="reg-label" for="r-instructor">Your name <span>*</span></label>
+              <input class="reg-input" id="r-instructor" placeholder="Dr. Fatima"/>
+            </div>
+            <div>
+              <label class="reg-label" for="r-dept">Department <span>(optional)</span></label>
+              <input class="reg-input" id="r-dept" placeholder="CS"/>
+            </div>
+            <div>
+              <label class="reg-label" for="r-term">Term / Semester <span>*</span></label>
+              <input class="reg-input" id="r-term" placeholder="Spring 2026"/>
+            </div>
+            <div>
+              <label class="reg-label" for="r-sections">Sections <span>(comma-sep)</span></label>
+              <input class="reg-input" id="r-sections" placeholder="CS-4A, CS-4B"/>
+            </div>
+            <div class="full">
+              <label class="reg-label" for="r-university">University <span>(optional)</span></label>
+              <input class="reg-input" id="r-university" placeholder="FAST-NUCES · Islamabad"/>
+            </div>
+            <div class="full">
+              <label class="reg-label" for="r-email">Your contact email <span>(optional — for approval notification)</span></label>
+              <input class="reg-input" id="r-email" type="email" placeholder="you@university.edu"/>
+            </div>
+          </div>
+          <button class="reg-submit-btn" onclick="submitRegistration()">Register my course &rarr;</button>
+          <div class="reg-result" id="reg-result"></div>
+        </div>
+
+        <!-- ── Manual fallback: snippet for coordinator ──────────── -->
+        <div id="snippet-section">
+          <div class="link-label" id="snippet-label">Send this snippet to your IT coordinator</div>
+          <p id="snippet-desc" style="margin-bottom:8px;font-size:13px;color:var(--ts)">They add one entry to <code>directory.html</code> and push — or you can <a href="directory.html" id="dir-link" style="color:var(--g1);font-weight:600">check if the shared registry is already set up</a>.</p>
+          <div class="snippet-wrap">
+            <button class="snippet-copy-btn" onclick="copySnippet(this)">Copy</button>
+            <div class="snippet-box" id="dir-snippet"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -423,6 +490,12 @@ body {
 </div><!-- /.page-wrap -->
 
 <script>
+// ── Registry URL — set this once after deploying gas_registry/ ───
+// When set, the registration form submits directly. Leave '' to use
+// the manual snippet fallback only.
+var REGISTRY_URL   = ''; // ← paste your registry GAS /exec URL here
+var _currentGasUrl = '';
+
 // ── Derive base URL for generating links ──────────────────────────
 var BASE_URL = (function () {
   var u = location.href.replace(/[?#].*$/, '').replace(/\/[^/]*$/, '/');
@@ -461,6 +534,8 @@ function generateLinks() {
   var studentUrl = BASE_URL + 'index.html?gs=' + encoded;
   var adminUrl   = BASE_URL + 'admin.html?gs=' + encoded;
 
+  _currentGasUrl = raw;
+
   document.getElementById('student-link').textContent = studentUrl;
   document.getElementById('admin-link').textContent   = adminUrl;
 
@@ -476,7 +551,101 @@ function generateLinks() {
   ].join('\n');
   document.getElementById('dir-snippet').textContent = snippet;
 
+  // Show self-service form if registry is configured
+  var regSection     = document.getElementById('reg-section');
+  var snippetLabel   = document.getElementById('snippet-label');
+  var snippetDesc    = document.getElementById('snippet-desc');
+  if (REGISTRY_URL) {
+    regSection.style.display = 'block';
+    snippetLabel.textContent = 'Or send this snippet manually';
+    snippetDesc.innerHTML    = 'If the form above doesn\'t work, send this to your IT coordinator instead.';
+  } else {
+    regSection.style.display = 'none';
+  }
+
   out.classList.add('show');
+}
+
+// ── JSONP helper (inline) ─────────────────────────────────────────
+function jsonpGet(url) {
+  return new Promise(function(resolve, reject) {
+    var cbName = '__setupJp' + Date.now() + Math.random().toString(36).slice(2, 7);
+    var script = null;
+    var timer  = setTimeout(function() { cleanup(); reject(new Error('Timeout')); }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    script = document.createElement('script');
+    script.onerror = function() { cleanup(); reject(new Error('Load failed')); };
+    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
+    document.head.appendChild(script);
+  });
+}
+
+// ── Registration form submit ──────────────────────────────────────
+function submitRegistration() {
+  var name        = (document.getElementById('r-name').value        || '').trim();
+  var instructor  = (document.getElementById('r-instructor').value  || '').trim();
+  var dept        = (document.getElementById('r-dept').value        || '').trim();
+  var term        = (document.getElementById('r-term').value        || '').trim();
+  var sections    = (document.getElementById('r-sections').value    || '').trim();
+  var university  = (document.getElementById('r-university').value  || '').trim();
+  var contactEmail= (document.getElementById('r-email').value       || '').trim();
+  var result      = document.getElementById('reg-result');
+
+  if (!name || !instructor || !term) {
+    result.className = 'reg-result err';
+    result.style.display = 'block';
+    result.textContent = 'Course name, your name, and term are required.';
+    return;
+  }
+  if (!_currentGasUrl) {
+    result.className = 'reg-result err';
+    result.style.display = 'block';
+    result.textContent = 'Paste your GAS Web App URL above first.';
+    return;
+  }
+
+  var btn = document.querySelector('.reg-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+  result.style.display = 'none';
+
+  var url = REGISTRY_URL
+    + '?action=register'
+    + '&name='         + encodeURIComponent(name)
+    + '&instructor='   + encodeURIComponent(instructor)
+    + '&dept='         + encodeURIComponent(dept)
+    + '&term='         + encodeURIComponent(term)
+    + '&sections='     + encodeURIComponent(sections)
+    + '&university='   + encodeURIComponent(university)
+    + '&contactEmail=' + encodeURIComponent(contactEmail)
+    + '&gasUrl='       + encodeURIComponent(_currentGasUrl);
+
+  jsonpGet(url)
+    .then(function(data) {
+      btn.disabled = false;
+      btn.textContent = 'Register my course →';
+      result.style.display = 'block';
+      if (data.ok) {
+        result.className = 'reg-result ok';
+        result.textContent = data.message || 'Registration submitted!';
+        btn.style.display = 'none';
+      } else {
+        result.className = 'reg-result err';
+        result.textContent = data.error || 'Something went wrong. Please try again.';
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Register my course →';
+      result.className = 'reg-result err';
+      result.style.display = 'block';
+      result.textContent = 'Could not reach the registry. Use the manual snippet below instead.';
+    });
 }
 
 // ── Copy helpers ─────────────────────────────────────────────────
