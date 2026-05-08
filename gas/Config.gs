@@ -19,20 +19,22 @@ var DEFAULT_SETTINGS = {
 };
 
 // ── Default course configuration ───────────────────────────────────
+// These are first-run defaults only — all values can be changed via
+// the admin panel (Settings → Course Settings) without touching code.
 var DEFAULT_COURSE_SETTINGS = {
-  courseName:     'ML for Business Analytics',
-  isLab:          true,
+  courseName:     'My Course',
+  isLab:          false,
   sessionCount:   14,
-  sessionLabel:   'Lab',
-  sections:       ['BSBA-6A', 'BSBA-6B', 'MSBA'],
+  sessionLabel:   'Session',
+  sections:       ['Section A', 'Section B'],
   term:           'Spring 2026',
   instructorName: '',
-  emailDomain:    'nu.edu.pk',
+  emailDomain:    '',        // leave blank to accept any email domain
   submissionOpen: true,
   closedMessage:  '',
   announcement:   '',
-  universityName: 'FAST-NUCES \u00b7 Islamabad',
-  rollFormat:     '\\d{2}[IKik]-\\d{4}'
+  universityName: '',        // leave blank to hide the university label
+  rollFormat:     ''         // leave blank to accept any roll/ID format
 };
 
 // ── Sheet column headers (19 columns) ─────────────────────────────

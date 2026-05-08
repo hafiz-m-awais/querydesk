@@ -88,6 +88,17 @@ body {
 }
 .notice code { background: var(--gray); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 12px; }
 
+/* Instructor CTA */
+.instructor-cta {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin-top: 1.5rem; padding: 13px 18px;
+  background: var(--white); border-radius: var(--r);
+  border: 1.5px solid var(--border); box-shadow: var(--shadow);
+  font-size: 13px; color: var(--ts);
+}
+.instructor-cta a { color: var(--g1); font-weight: 700; text-decoration: none; }
+.instructor-cta a:hover { text-decoration: underline; }
+
 @media (max-width: 520px) {
   .courses-grid { grid-template-columns: 1fr; }
   .header-card { padding: 1.5rem; }
@@ -112,6 +123,12 @@ body {
   </div>
 
   <div id="directory"></div>
+
+  <div class="instructor-cta">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--g1)"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+    <span>Are you an instructor? Set up QueryDesk for your own course —&nbsp;</span>
+    <a href="setup.html">get started in 10 minutes &rarr;</a>
+  </div>
 
 </div>
 

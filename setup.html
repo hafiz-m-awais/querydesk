@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>QueryDesk — Instructor Setup</title>
+<style>
+:root {
+  --g1: #1D9E75; --g2: #0F6E56; --g3: #062d21;
+  --gl: #E1F5EE; --gm: #5DCAA5;
+  --border: #e2e1dc; --gray: #f6f5f0;
+  --text: #18181a; --ts: #5a5958; --th: #9c9992;
+  --white: #fff;
+  --r: 10px; --rl: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,.09), 0 1px 4px rgba(0,0,0,.05);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 20% 0%, #d1ede3 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, #d6e4f5 0%, transparent 55%),
+    #f0eeea;
+  background-attachment: fixed;
+  color: var(--text);
+  padding: 2rem 1rem 4rem;
+}
+.page-wrap { max-width: 680px; margin: 0 auto; }
+
+/* ── Header ────────────────────────────────────────────────────── */
+.header-card {
+  background: linear-gradient(135deg, var(--g3) 0%, var(--g2) 100%);
+  border-radius: var(--rl); padding: 2rem 2rem 1.5rem;
+  margin-bottom: 1.5rem; box-shadow: var(--shadow);
+}
+.back-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; color: rgba(255,255,255,.55); text-decoration: none; margin-bottom: 14px;
+}
+.back-link:hover { color: #fff; }
+.header-card h1 { font-size: 22px; font-weight: 700; color: #fff; }
+.header-card p  { font-size: 13px; color: rgba(255,255,255,.6); margin-top: 6px; line-height: 1.65; }
+.time-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; padding: 3px 10px;
+  border-radius: 99px; background: rgba(255,255,255,.13); color: rgba(255,255,255,.85);
+  border: 1px solid rgba(255,255,255,.2); margin-top: 12px;
+}
+
+/* ── Step cards ────────────────────────────────────────────────── */
+.step-card {
+  background: var(--white); border-radius: var(--rl);
+  box-shadow: var(--shadow); border: 1.5px solid var(--border);
+  margin-bottom: 12px; overflow: hidden;
+}
+.step-card.highlight { border-color: var(--g1); }
+
+.step-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px; cursor: pointer; user-select: none; transition: background .12s;
+}
+.step-header:hover { background: var(--gray); }
+
+.step-num {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--gl); color: var(--g2);
+  font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; border: 1.5px solid var(--gm);
+  transition: background .2s, color .2s;
+}
+.step-num.done { background: var(--g1); color: #fff; border-color: var(--g1); }
+
+.step-title    { font-size: 14px; font-weight: 700; }
+.step-subtitle { font-size: 12px; color: var(--ts); margin-top: 1px; }
+.step-info     { flex: 1; }
+.chevron { color: var(--th); flex-shrink: 0; }
+
+.step-body {
+  padding: 4px 20px 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Content inside steps ──────────────────────────────────────── */
+.step-body ol, .step-body ul {
+  padding-left: 20px; font-size: 13px; color: var(--ts); line-height: 2;
+}
+.step-body li { margin-bottom: 2px; }
+.step-body p  { font-size: 13px; color: var(--ts); line-height: 1.65; }
+
+.step-body code {
+  background: var(--gray); border: 1px solid var(--border); border-radius: 5px;
+  padding: 1px 7px; font-size: 12px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+.note {
+  background: var(--gl); border: 1px solid var(--gm); border-radius: var(--r);
+  padding: 10px 14px; font-size: 12px; color: var(--g2); margin-top: 12px; line-height: 1.6;
+}
+.note strong { font-weight: 700; }
+
+.prop-table {
+  width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px;
+}
+.prop-table th {
+  text-align: left; padding: 6px 10px; background: var(--gray);
+  font-size: 11px; font-weight: 700; letter-spacing: .05em; color: var(--ts);
+  border-bottom: 1px solid var(--border);
+}
+.prop-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.prop-table td:first-child code { color: var(--g2); }
+
+.done-btn {
+  margin-top: 14px; padding: 10px 20px;
+  background: var(--g1); color: #fff; border: none; border-radius: var(--r);
+  font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s;
+}
+.done-btn:hover { background: var(--g2); }
+
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+/* ── Link generator (Step 5) ───────────────────────────────────── */
+.gen-label {
+  font-size: 11px; font-weight: 700; color: var(--ts); margin-bottom: 6px;
+  display: block; text-transform: uppercase; letter-spacing: .06em;
+}
+.gen-input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: var(--r); font-size: 13px;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  background: var(--white); color: var(--text); outline: none; transition: border-color .15s;
+}
+.gen-input:focus { border-color: var(--g1); }
+.gen-input.valid { border-color: var(--g1); }
+.gen-input.error { border-color: #e05252; }
+
+.gen-output { display: none; margin-top: 16px; }
+.gen-output.show { display: block; }
+
+.success-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 12px; background: var(--gl); border: 1px solid var(--gm);
+  border-radius: 99px; font-size: 12px; font-weight: 700; color: var(--g2);
+  margin-bottom: 14px;
+}
+
+.link-group { margin-bottom: 14px; }
+.link-label { font-size: 11px; font-weight: 700; color: var(--ts); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 5px; }
+.link-row   { display: flex; align-items: stretch; gap: 8px; }
+.link-box {
+  flex: 1; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--r);
+  font-size: 12px; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  background: var(--gray); color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.copy-btn {
+  padding: 9px 14px; background: none; border: 1.5px solid var(--border);
+  border-radius: var(--r); font-size: 12px; font-weight: 600; color: var(--ts);
+  cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s, color .12s;
+}
+.copy-btn:hover { background: var(--gray); }
+.copy-btn.copied { border-color: var(--g1); color: var(--g1); }
+
+.snippet-wrap { position: relative; margin-top: 8px; }
+.snippet-box {
+  padding: 14px 16px; border-radius: var(--r);
+  background: #1a1f2e; color: #a8d8b9;
+  font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px; white-space: pre; overflow-x: auto; line-height: 1.75;
+}
+.snippet-copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 5px; padding: 3px 10px; font-size: 11px; font-weight: 600;
+  color: rgba(255,255,255,.75); cursor: pointer; transition: background .12s;
+}
+.snippet-copy-btn:hover { background: rgba(255,255,255,.2); }
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .header-card { padding: 1.5rem; }
+  .link-row { flex-direction: column; }
+  .copy-btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header-card">
+    <a href="directory.html" class="back-link">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to directory
+    </a>
+    <h1>Set up QueryDesk for your course</h1>
+    <p>Your data stays in your own Google account — no shared server, no cost.<br>
+       Complete steps 1–4 once, then use the link generator to share with your students.</p>
+    <span class="time-badge">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      ~10 minutes total
+    </span>
+  </div>
+
+  <!-- ─── STEP 1 ─────────────────────────────────────────────── -->
+  <div class="step-card" id="s1">
+    <div class="step-header" onclick="toggle(1)">
+      <div class="step-num" id="n1">1</div>
+      <div class="step-info">
+        <div class="step-title">Create a Google Sheet</div>
+        <div class="step-subtitle">This becomes your course database</div>
+      </div>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="step-body" id="b1" style="display:none">
+      <ol style="margin-top:12px">
+        <li>Go to <strong>sheets.google.com</strong> → click <strong>Blank spreadsheet</strong></li>
+        <li>Rename it anything — e.g. <code>QueryDesk – Spring 2026</code></li>
+        <li>Leave the first tab as-is — the script will set everything up on first use</li>
+      </ol>
+      <div class="note">Keep this tab open — the next step opens directly from it.</div>
+      <button class="done-btn" onclick="markDone(1)">✓ Done — move to step 2</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 2 ─────────────────────────────────────────────── -->
+  <div class="step-card" id="s2">
+    <div class="step-header" onclick="toggle(2)">
+      <div class="step-num" id="n2">2</div>
+      <div class="step-info">
+        <div class="step-title">Add the 6 script files</div>
+        <div class="step-subtitle">Copy from the repo into the Apps Script editor</div>
+      </div>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="step-body" id="b2" style="display:none">
+      <ol style="margin-top:12px">
+        <li>In your Sheet: <strong>Extensions → Apps Script</strong></li>
+        <li>Delete the default <code>Code.gs</code> (right-click → Delete)</li>
+        <li>For each row in the table below: click <strong>+ (Files) → Script</strong>, name it, paste the contents</li>
+      </ol>
+      <table class="prop-table" style="margin-top:10px">
+        <thead><tr><th>File name to create</th><th>Paste the contents of</th></tr></thead>
+        <tbody>
+          <tr><td><code>Config</code></td><td><code>gas/Config.gs</code></td></tr>
+          <tr><td><code>GetHandlers</code></td><td><code>gas/GetHandlers.gs</code></td></tr>
+          <tr><td><code>PostHandlers</code></td><td><code>gas/PostHandlers.gs</code></td></tr>
+          <tr><td><code>SheetUtils</code></td><td><code>gas/SheetUtils.gs</code></td></tr>
+          <tr><td><code>DriveUtils</code></td><td><code>gas/DriveUtils.gs</code></td></tr>
+          <tr><td><code>EmailUtils</code></td><td><code>gas/EmailUtils.gs</code></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:10px">Press <code>Ctrl+S</code> after each file. Name the project <strong>QueryDesk</strong>.</p>
+      <div class="note">All 6 files share the same scope in Apps Script — order doesn't matter.</div>
+      <button class="done-btn" onclick="markDone(2)">✓ Done — move to step 3</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 3 ─────────────────────────────────────────────── -->
+  <div class="step-card" id="s3">
+    <div class="step-header" onclick="toggle(3)">
+      <div class="step-num" id="n3">3</div>
+      <div class="step-info">
+        <div class="step-title">Set your password &amp; email</div>
+        <div class="step-subtitle">Stored securely — never in code or GitHub</div>
+      </div>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="step-body" id="b3" style="display:none">
+      <ol style="margin-top:12px">
+        <li>In Apps Script: click the <strong>gear icon ⚙</strong> (Project Settings) in the left sidebar</li>
+        <li>Scroll to <strong>Script Properties</strong> → click <strong>Add script property</strong></li>
+        <li>Add both properties from the table below</li>
+        <li>Click <strong>Save script properties</strong></li>
+      </ol>
+      <table class="prop-table">
+        <thead><tr><th>Property name</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>ADMIN_PASSWORD</code></td>
+            <td>A strong password you'll use to log into your admin panel</td>
+          </tr>
+          <tr>
+            <td><code>INSTRUCTOR_EMAIL</code></td>
+            <td>Your email address — you'll receive a notification for each new query</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note"><strong>Security:</strong> Script Properties are stored inside Google's secure vault and are never visible in source code, version history, or GitHub.</div>
+      <button class="done-btn" onclick="markDone(3)">✓ Done — move to step 4</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 4 ─────────────────────────────────────────────── -->
+  <div class="step-card" id="s4">
+    <div class="step-header" onclick="toggle(4)">
+      <div class="step-num" id="n4">4</div>
+      <div class="step-info">
+        <div class="step-title">Deploy as Web App</div>
+        <div class="step-subtitle">Creates your personal backend API URL</div>
+      </div>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="step-body" id="b4" style="display:none">
+      <ol style="margin-top:12px">
+        <li>Click <strong>Deploy</strong> (top right of Apps Script) → <strong>New deployment</strong></li>
+        <li>Click the <strong>gear ⚙</strong> next to "Select type" → choose <strong>Web app</strong></li>
+        <li>Set:
+          <ul style="margin-top:4px">
+            <li><strong>Execute as:</strong> Me</li>
+            <li><strong>Who has access:</strong> Anyone</li>
+          </ul>
+        </li>
+        <li>Click <strong>Deploy</strong> → authorize when prompted (click through all permission screens)</li>
+        <li><strong>Copy the Web App URL</strong> — it ends with <code>/exec</code></li>
+      </ol>
+      <div class="note">
+        <strong>Tip:</strong> After editing any script file later, you must create a <em>new</em> deployment
+        (Deploy → New deployment again) — not "Manage deployments → Redeploy". 
+        A new deployment creates a new URL, so update your links accordingly.
+      </div>
+      <button class="done-btn" onclick="markDone(4)">✓ Done — get my links</button>
+    </div>
+  </div>
+
+  <!-- ─── STEP 5 — LINK GENERATOR ───────────────────────────── -->
+  <div class="step-card highlight" id="s5">
+    <div class="step-header" onclick="toggle(5)">
+      <div class="step-num" id="n5">5</div>
+      <div class="step-info">
+        <div class="step-title">Get your personal links</div>
+        <div class="step-subtitle">Paste your Web App URL — links ready instantly</div>
+      </div>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="step-body" id="b5">
+      <div style="margin-top:12px">
+        <label class="gen-label" for="gas-url">Your GAS Web App URL</label>
+        <input
+          type="text"
+          class="gen-input"
+          id="gas-url"
+          placeholder="https://script.google.com/macros/s/AKfy.../exec"
+          oninput="generateLinks()"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div id="gen-output" class="gen-output">
+        <div class="divider"></div>
+
+        <div class="success-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Links ready
+        </div>
+
+        <div class="link-group">
+          <div class="link-label">Student form — share this with your class</div>
+          <div class="link-row">
+            <div class="link-box" id="student-link"></div>
+            <button class="copy-btn" onclick="copyText('student-link', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="link-group">
+          <div class="link-label">Admin panel — keep this private (your login)</div>
+          <div class="link-row">
+            <div class="link-box" id="admin-link"></div>
+            <button class="copy-btn" onclick="copyText('admin-link', this)">Copy</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="link-label">Want to appear in the course directory?</div>
+        <p style="margin-bottom:8px">Send the snippet below to your IT coordinator — they add one line to <code>directory.html</code> and push. Fill in your details first.</p>
+        <div class="snippet-wrap">
+          <button class="snippet-copy-btn" onclick="copySnippet(this)">Copy</button>
+          <div class="snippet-box" id="dir-snippet"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── WHAT'S NEXT ──────────────────────────────────────────── -->
+  <div class="step-card" id="s6" style="border-style:dashed">
+    <div class="step-header" onclick="toggle(6)">
+      <div class="step-num" style="background:var(--gray);color:var(--ts);border-color:var(--border)">→</div>
+      <div class="step-info">
+        <div class="step-title">Configure your course settings</div>
+        <div class="step-subtitle">Set course name, sections, email domain, announcement banner, and more</div>
+      </div>
+      <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="step-body" id="b6" style="display:none">
+      <p style="margin-top:12px">Once you have your admin panel open:</p>
+      <ol style="margin-top:8px">
+        <li>Log in with the <code>ADMIN_PASSWORD</code> you set in step 3</li>
+        <li>Click <strong>⚙ Settings</strong></li>
+        <li>Under <strong>Course Settings</strong>, fill in:</li>
+      </ol>
+      <table class="prop-table" style="margin-top:10px">
+        <thead><tr><th>Field</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td>Course Name</td><td>Shown on the student form header</td></tr>
+          <tr><td>Term / Semester</td><td>e.g. Fall 2026</td></tr>
+          <tr><td>Session Label</td><td>"Lab", "Lecture", "Week", etc.</td></tr>
+          <tr><td>Session Count</td><td>Total number of sessions (for the dropdown)</td></tr>
+          <tr><td>Sections</td><td>Comma-separated: <code>CS-4A, CS-4B</code></td></tr>
+          <tr><td>Instructor Name</td><td>Shown in email notifications</td></tr>
+          <tr><td>Email Domain</td><td>Student email suffix — leave blank to accept any</td></tr>
+          <tr><td>University Name</td><td>Shown in the top-bar — leave blank to hide</td></tr>
+          <tr><td>Roll/ID Format</td><td>Regex for roll validation — leave blank to accept any</td></tr>
+          <tr><td>Submissions Open</td><td>Toggle to open or close submissions</td></tr>
+          <tr><td>Announcement</td><td>Info banner shown on the student form</td></tr>
+        </tbody>
+      </table>
+      <div class="note">All settings are saved to your Google Sheet — no code editing required.</div>
+    </div>
+  </div>
+
+</div><!-- /.page-wrap -->
+
+<script>
+// ── Derive base URL for generating links ──────────────────────────
+var BASE_URL = (function () {
+  var u = location.href.replace(/[?#].*$/, '').replace(/\/[^/]*$/, '/');
+  return u.endsWith('/') ? u : u + '/';
+}());
+
+// ── Step accordion ───────────────────────────────────────────────
+function toggle(n) {
+  var body = document.getElementById('b' + n);
+  if (!body) return;
+  body.style.display = body.style.display === 'none' ? 'block' : 'none';
+}
+
+// Mark a step done and auto-open the next one
+function markDone(n) {
+  var num = document.getElementById('n' + n);
+  if (num) { num.textContent = '✓'; num.classList.add('done'); }
+  var cur = document.getElementById('b' + n);
+  if (cur) cur.style.display = 'none';
+  var next = document.getElementById('b' + (n + 1));
+  if (next) next.style.display = 'block';
+}
+
+// ── Link generator ────────────────────────────────────────────────
+function generateLinks() {
+  var raw = document.getElementById('gas-url').value.trim();
+  var out = document.getElementById('gen-output');
+  var inp = document.getElementById('gas-url');
+
+  var valid = raw.length > 0 && raw.startsWith('https://script.google.com');
+  inp.className = 'gen-input' + (raw.length > 10 ? (valid ? ' valid' : ' error') : '');
+
+  if (!valid) { out.classList.remove('show'); return; }
+
+  var encoded    = encodeURIComponent(raw);
+  var studentUrl = BASE_URL + 'index.html?gs=' + encoded;
+  var adminUrl   = BASE_URL + 'admin.html?gs=' + encoded;
+
+  document.getElementById('student-link').textContent = studentUrl;
+  document.getElementById('admin-link').textContent   = adminUrl;
+
+  var snippet = [
+    '{',
+    '  name:       \'Your Course Name\',',
+    '  instructor: \'Your Name\',',
+    '  dept:       \'CS\',',
+    '  term:       \'Spring 2026\',',
+    '  sections:   [\'Section A\', \'Section B\'],',
+    '  gasUrl:     \'' + raw + '\'',
+    '},'
+  ].join('\n');
+  document.getElementById('dir-snippet').textContent = snippet;
+
+  out.classList.add('show');
+}
+
+// ── Copy helpers ─────────────────────────────────────────────────
+function copyText(id, btn) {
+  var text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(function () {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function copySnippet(btn) {
+  var text = document.getElementById('dir-snippet').textContent;
+  navigator.clipboard.writeText(text).then(function () {
+    btn.textContent = 'Copied!';
+    setTimeout(function () { btn.textContent = 'Copy'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
