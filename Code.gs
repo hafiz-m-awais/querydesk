@@ -1,5 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════
-//  ML LAB QUERY — Google Apps Script Backend
+//  Code.gs — LEGACY MONOLITHIC FILE (kept for reference only)
+//
+//  ⚠️  THIS FILE IS SUPERSEDED by the modular gas/ folder:
+//       gas/Config.gs        — shared constants & response helpers
+//       gas/SheetUtils.gs    — Google Sheets access helpers
+//       gas/DriveUtils.gs    — Google Drive attachment upload
+//       gas/EmailUtils.gs    — all email notification logic
+//       gas/GetHandlers.gs   — HTTP GET handler (doGet)
+//       gas/PostHandlers.gs  — HTTP POST handler (doPost)
+//
+//  When deploying to Apps Script, use the gas/ files instead.
+//  Do NOT deploy both Code.gs and the gas/ modules simultaneously —
+//  they define overlapping functions (doGet, doPost, etc.) which
+//  would cause "Identifier already declared" errors.
+// ═══════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════
+//  QueryDesk — Google Apps Script Backend  (University Edition)
 //  Paste this entire file into your Apps Script editor
 //  (Google Sheet → Extensions → Apps Script → replace everything)
 // ═══════════════════════════════════════════════════════════════════
