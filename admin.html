@@ -115,6 +115,7 @@
       <button class="btn-sm" onclick="clearBulk()">Deselect all</button>
     </div>
 
+    <div id="pagination" style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:8px;min-height:28px"></div>
     <!-- Table -->
     <div class="table-wrap">
       <table>
@@ -171,7 +172,7 @@
           </select>
         </div>
         <div class="field" style="flex:2">
-          <label>Instructor notes (optional)</label>
+          <label>Instructor notes (optional) <label style="font-weight:400;font-size:12px;margin-left:8px"><input type="checkbox" id="m-notify" style="margin-right:4px"/>Notify student by email</label></label>
           <textarea id="m-notes" placeholder="Add a note � visible to the student in their status tracker�"></textarea>
         </div>
       </div>

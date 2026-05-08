@@ -13,8 +13,8 @@
 </div>
 <div class="page-wrap">
   <div class="top-bar">
-    <span class="uni">FAST-NUCES &middot; Islamabad</span>
-    <a href="admin.html">Instructor login &rarr;</a>
+    <span class="uni"></span><!-- filled dynamically by applyCourseBranding() -->
+    
   </div>
 
   <!-- Announcement banner (shown when admin sets announcement text) -->
@@ -33,13 +33,13 @@
   <div class="main-card" id="main-card">
     <div class="card-head">
       <h1>QueryDesk</h1>
-      <p>Student Query Submission &nbsp;&middot;&nbsp; Spring 2026</p>
+      <p>Student Query Submission</p>
       <div class="head-badges">
-        <span class="head-badge">
+        <span class="head-badge" id="email-badge">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-          NU email verified
-        </span>
-        <span class="head-badge">BSBA-6A &middot; BSBA-6B &middot; MSBA</span>
+          Email verified
+        </span><!-- domain filled dynamically -->
+        <span class="head-badge" id="sections-badge"></span><!-- sections filled dynamically -->
       </div>
     </div>
 
