@@ -167,6 +167,26 @@ async def submit_query(request: Request, body: QuerySubmitRequest, db: AsyncSess
             detail="Email does not match expected format for this course",
         )
 
+    # Duplicate guard: same email + subject + course within 5 minutes => 409
+    dup = await db.execute(
+        text(
+            "SELECT 1 FROM queries "
+            "WHERE course_id = :course_id AND student_email = :email "
+            "  AND subject = :subject "
+            "  AND created_at > NOW() - INTERVAL '5 minutes'"
+        ),
+        {
+            "course_id": body.course_id,
+            "email": str(body.student_email),
+            "subject": body.subject,
+        },
+    )
+    if dup.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Duplicate submission: this query was already submitted recently",
+        )
+
     row = await db.execute(
         text(
             "INSERT INTO queries "
