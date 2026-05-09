@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>QueryDesk � Admin</title>
+<title>QueryDesk - Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/admin.css"/>
 </head>
 
@@ -19,7 +22,7 @@
       <path d="M7 11V7a5 5 0 0110 0v4"/>
     </svg>
     <h1>Instructor Login</h1>
-    <p>ML for Business Analytics LAB &nbsp;�&nbsp; FAST-NUCES</p>
+    <p>Secure admin panel for your course</p>
     <input type="password" id="pw-input" placeholder="Enter admin password"
            onkeydown="if(event.key==='Enter') doLogin()"/>
     <div class="login-err" id="login-err">Incorrect password. Try again.</div>
@@ -38,12 +41,12 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="2">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
       </svg>
-      <h2>QueryDesk � Admin</h2>
+      <h2>QueryDesk - Admin</h2>
       <span class="role-badge">Instructor</span>
     </div>
     <div class="topbar-right">
-      <button class="btn-outline" onclick="loadData()"       style="font-size:12px">? Refresh</button>
-      <button class="btn-outline" onclick="exportCSV()"      style="font-size:12px">? Export CSV</button>
+      <button class="btn-outline" onclick="loadData()"       style="font-size:12px">Refresh</button>
+      <button class="btn-outline" onclick="exportCSV()"      style="font-size:12px">Export CSV</button>
       <button class="btn-outline" onclick="openSettings()"   style="font-size:12px">&#9881; Settings</button>
       <button class="btn-outline" onclick="openAnalytics()"  style="font-size:12px">&#128202; Analytics</button>
       <button class="btn-outline" onclick="doLogout()"       style="font-size:12px">Sign out</button>
@@ -55,30 +58,30 @@
     <!-- Stats -->
     <div class="stats-row">
       <div class="stat-card">
-        <div class="s-num" id="stat-total">�</div>
+        <div class="s-num" id="stat-total">-</div>
         <div class="s-lbl">Total queries</div>
       </div>
       <div class="stat-card">
-        <div class="s-num" style="color:var(--amber-dark)" id="stat-pending">�</div>
+        <div class="s-num" style="color:var(--amber-dark)" id="stat-pending">-</div>
         <div class="s-lbl">Pending</div>
       </div>
       <div class="stat-card">
-        <div class="s-num" style="color:var(--blue-dark)" id="stat-reviewing">�</div>
+        <div class="s-num" style="color:var(--blue-dark)" id="stat-reviewing">-</div>
         <div class="s-lbl">Reviewing</div>
       </div>
       <div class="stat-card">
-        <div class="s-num" style="color:var(--green)" id="stat-resolved">�</div>
+        <div class="s-num" style="color:var(--green)" id="stat-resolved">-</div>
         <div class="s-lbl">Resolved</div>
       </div>
       <div class="stat-card">
-        <div class="s-num" style="color:var(--red)" id="stat-rejected">�</div>
+        <div class="s-num" style="color:var(--red)" id="stat-rejected">-</div>
         <div class="s-lbl">Rejected</div>
       </div>
     </div>
 
     <!-- Filter bar -->
     <div class="filter-bar">
-      <input type="text" id="f-search" placeholder="Search name, roll, ref ID�" oninput="renderTable()"/>
+      <input type="text" id="f-search" placeholder="Search name, roll, ref ID..." oninput="renderTable()"/>
       <select id="f-section" onchange="renderTable()">
         <option value="">All sections</option>
       </select>
@@ -149,7 +152,7 @@
   <div class="modal">
     <div class="modal-head">
       <h3 id="m-title">Query detail</h3>
-      <button class="btn-icon" onclick="closeModal()">?</button>
+      <button class="btn-icon" onclick="closeModal()">&#10005;</button>
     </div>
     <div class="modal-body">
       <div class="detail-grid" id="m-grid"></div>
@@ -173,7 +176,7 @@
         </div>
         <div class="field" style="flex:2">
           <label>Instructor notes (optional) <label style="font-weight:400;font-size:12px;margin-left:8px"><input type="checkbox" id="m-notify" style="margin-right:4px"/>Notify student by email</label></label>
-          <textarea id="m-notes" placeholder="Add a note � visible to the student in their status tracker�"></textarea>
+          <textarea id="m-notes" placeholder="Add a note - visible to the student in their status tracker"></textarea>
         </div>
       </div>
     </div>
@@ -208,7 +211,7 @@
   <div class="settings-panel">
     <div class="settings-head">
       <h3>Query Type Settings</h3>
-      <button class="btn-icon" onclick="closeSettings()">?</button>
+      <button class="btn-icon" onclick="closeSettings()">&#10005;</button>
     </div>
     <div class="settings-body">
       <p class="settings-desc">
@@ -329,7 +332,7 @@
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Instructor Name <span style="font-weight:400;color:var(--text-hint)">(optional)</span></label>
-          <input type="text" id="s-instrname" placeholder="e.g. Dr. Ahmed" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+          <input type="text" id="s-instructorname" placeholder="e.g. Dr. Ahmed" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">Student Email Domain <span style="font-weight:400;color:var(--text-hint)">(used for validation)</span></label>
@@ -338,7 +341,7 @@
         </div>
         <div>
           <label style="font-size:12px;font-weight:600;display:block;margin-bottom:3px">University / Institution Name</label>
-          <input type="text" id="s-uniname" placeholder="FAST-NUCES &middot; Islamabad" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
+          <input type="text" id="s-universityname" placeholder="University / Campus Name" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg-input);color:var(--text)"/>
           <div style="font-size:11px;color:var(--text-hint);margin-top:3px">Shown in the top-bar of the student form.</div>
         </div>
         <div>
@@ -348,7 +351,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <label class="toggle-switch" style="flex-shrink:0">
-            <input type="checkbox" id="s-submissionopen" checked/>
+            <input type="checkbox" id="s-open" checked/>
             <span class="toggle-track"></span>
             <span class="toggle-knob"></span>
           </label>
@@ -372,7 +375,7 @@
     <div class="settings-foot">
       <span class="save-status" id="settings-save-status">&#10003; Saved</span>
       <button class="btn-outline" onclick="closeSettings()">Cancel</button>
-      <button class="btn-primary" onclick="saveSettings()">Save settings</button>
+      <button class="btn-primary" onclick="saveAllSettings()">Save all settings</button>
     </div>
   </div>
 </div>
