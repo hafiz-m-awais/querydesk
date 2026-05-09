@@ -237,7 +237,7 @@ function insertLabDetailRow(typeKey, lab) {
   if (!inserted) container.appendChild(row);
 }
 
-// SUBMIT — now JSONP-confirmed; attachment still goes via POST separately
+// SUBMIT — calls POST /queries REST endpoint
 function doSubmit() {
   if (document.getElementById('hp').value) return;
   if (!checkRate()) { document.getElementById('rate-err').style.display='block'; return; }
@@ -245,23 +245,21 @@ function doSubmit() {
   btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Submitting\u2026';
   var email = gv('email').trim().toLowerCase(), name = gv('name').trim(), roll = gv('roll').trim().toUpperCase(), section = gv('section');
   var sLbl  = (loadedCourse && loadedCourse.sessionLabel) || 'Session';
-  var payloads = [], idx = 0;
+  var refIds = [];
+  var chain  = Promise.resolve();
+
   selectedTypes.forEach(function(key) {
     var t = ALL_TYPES[key];
-    idx++;
-    var labsSorted=[],labDateParts=[],labIssueParts=[],labMawdParts=[],labMexpParts=[],labMdiscParts=[];
-    var extraDate='',marksAwarded='',marksExpected='',issue='',request='';
+    var labsSorted=[], labDateParts=[], extraDate='', marksAwarded='', marksExpected='', issue='', request='';
     if (t.needsLab) {
       var sel = labSelections[key] || new Set();
       labsSorted = Array.from(sel).sort(function(a,b){return parseInt(a.split(' ').pop())-parseInt(b.split(' ').pop());});
-      labsSorted.forEach(function(lab) {
-        var n = lab.split(' ').pop();
-        var ld = gv('ldate-'+key+'-'+n); if(ld) labDateParts.push(lab+': '+ld);
-        if(key==='attendance'){var iss=gv('lissue-'+key+'-'+n);if(iss)labIssueParts.push(lab+': '+iss);}
-        else if(key==='marks'){var aw=gv('lmawd-'+key+'-'+n),ex=gv('lmexp-'+key+'-'+n),dc=gv('lmdisc-'+key+'-'+n);if(aw)labMawdParts.push(lab+': '+aw);if(ex)labMexpParts.push(lab+': '+ex);if(dc)labMdiscParts.push(lab+': '+dc);}
+      labsSorted.forEach(function(lab){
+        var n=lab.split(' ').pop();
+        var ld=gv('ldate-'+key+'-'+n); if(ld) labDateParts.push(lab+': '+ld);
+        if(key==='attendance'){var iss=gv('lissue-'+key+'-'+n);if(iss)issue+=(issue?'; ':'')+lab+': '+iss;}
+        else if(key==='marks'){var aw=gv('lmawd-'+key+'-'+n),ex=gv('lmexp-'+key+'-'+n),dc=gv('lmdisc-'+key+'-'+n);if(aw)marksAwarded+=(marksAwarded?'; ':'')+lab+': '+aw;if(ex)marksExpected+=(marksExpected?'; ':'')+lab+': '+ex;if(dc)issue+=(issue?'; ':'')+lab+': '+dc;}
       });
-      issue = key==='attendance' ? labIssueParts.join(' | ') : labMdiscParts.join(' | ');
-      marksAwarded = labMawdParts.join(' | '); marksExpected = labMexpParts.join(' | ');
     } else {
       extraDate     = gv('d-assdate-'+key)||gv('d-findate-'+key)||gv('d-projdate-'+key)||'';
       marksAwarded  = gv('d-mawd-'+key)||'';
@@ -269,47 +267,43 @@ function doSubmit() {
       issue         = gv('d-mdisc-'+key)||'';
       request       = gv('d-assno-'+key)||gv('d-finq-'+key)||gv('d-projt-'+key)||'';
     }
-    payloads.push({ key:key, email:email, name:name, rollNumber:roll, section:section, labNumber:labsSorted.join(', '), labDate:labDateParts.join(' | '), queryType:key, description:gv('desc-'+key).trim(), extraDate:extraDate, marksAwarded:marksAwarded, marksExpected:marksExpected, issue:issue, request:request, isUrgent:isUrgent?'true':'false' });
+
+    // Build a rich subject and description for the v3 schema
+    var subject = ALL_TYPES[key].label;
+    if (labsSorted.length) subject += ' \u2014 ' + labsSorted.join(', ');
+    if (request) subject += ' \u2014 ' + request;
+
+    var descParts = [gv('desc-'+key).trim()];
+    if (labDateParts.length) descParts.push('Dates: ' + labDateParts.join(' | '));
+    if (extraDate)           descParts.push('Date: ' + extraDate);
+    if (marksAwarded)        descParts.push('Marks awarded: ' + marksAwarded);
+    if (marksExpected)       descParts.push('Marks expected: ' + marksExpected);
+    if (issue)               descParts.push('Issue: ' + issue);
+    if (section)             descParts.push('Section: ' + section);
+    var description = descParts.filter(Boolean).join('\n');
+
+    var payload = {
+      course_id:     COURSE_ID || null,
+      student_name:  name,
+      roll_no:       roll,
+      student_email: email,
+      subject:       subject,
+      description:   description,
+      attachment_url: null
+    };
+
+    chain = chain.then(function() {
+      return publicPost('/queries', payload)
+        .then(function(d) { refIds.push(d.id || '[submitted]'); })
+        .catch(function()  { refIds.push('[submitted]'); });
+    });
   });
 
-  submitAllJsonp(payloads, 0, [], email, name, roll, section);
-}
-
-function submitAllJsonp(payloads, i, refIds, email, name, roll, section) {
-  if (i >= payloads.length) {
-    // Attachment upload is fire-and-forget only if attachmentBase64 is set
-    if (attachmentBase64 && refIds.length > 0) {
-      gasPost({
-        action: 'submit', referenceId: refIds[0],
-        email: email, name: name, rollNumber: roll, section: section,
-        queryType: payloads[0].key, description: payloads[0].description,
-        attachmentName: attachmentFileName, attachmentData: attachmentBase64, attachmentMimeType: attachmentMimeType,
-        isUrgent: payloads[0].isUrgent
-      }).catch(function(){});
-    }
+  chain.then(function() {
     showSuccess(refIds, email, name, roll, section);
-    return;
-  }
-
-  // Use JSONP GET — we get the actual referenceId back (confirmed)
-  apiGetPublic('submitQuery', payloads[i])
-    .then(function(d) {
-      if (d.status === 'ok') {
-        refIds.push(d.referenceId);
-      } else if (d.status === 'duplicate') {
-        refIds.push('[duplicate — not resubmitted]');
-      } else {
-        // Fall back to fire-and-forget POST if JSONP fails
-        gasPost(Object.assign({ action:'submit' }, payloads[i])).catch(function(){});
-        refIds.push('[submitted]');
-      }
-      submitAllJsonp(payloads, i+1, refIds, email, name, roll, section);
-    })
-    .catch(function() {
-      gasPost(Object.assign({ action:'submit' }, payloads[i])).catch(function(){});
-      refIds.push('[submitted]');
-      submitAllJsonp(payloads, i+1, refIds, email, name, roll, section);
-    });
+    btn.disabled  = false;
+    btn.innerHTML = 'Submit another query \u2192';
+  });
 }
 
 function showSuccess(refIds, email, name, roll, section) {
@@ -323,104 +317,145 @@ function showSuccess(refIds, email, name, roll, section) {
   document.querySelector('.tracker-card').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-// ── STATUS TRACKER — OTP gated ─────────────────────────────────────
-var OTP_STATE = 'idle'; // idle | sent | verified
-var OTP_ROLL  = '';
-
 var TYPE_BADGE = {attendance:'tb-att',marks:'tb-mrk',assignment:'tb-asg',final:'tb-fin',project:'tb-prj'};
 var TYPE_LABEL = {attendance:'Attendance',marks:'Lab Marks',assignment:'Assignment',final:'Final Marks',project:'Project'};
 
-function checkStatus() {
-  var roll  = (gv('st-roll') || '').trim().toUpperCase();
-  var errEl = document.getElementById('st-err');
-  errEl.style.display = 'none';
-  if (!roll || roll.length < 3) { errEl.textContent = 'Please enter your roll number.'; errEl.style.display = 'block'; return; }
+// ── Status tracker (REST OTP-based) ───────────────────────────────
+var OTP_STATE = 'idle'; // 'idle' | 'sent' | 'verified'
+var OTP_EMAIL = '';
 
-  if (OTP_STATE === 'idle' || OTP_ROLL !== roll) {
-    requestOtp(roll);
+function checkStatus() {
+  var emailEl = document.getElementById('st-email') || document.getElementById('st-roll');
+  if (!emailEl) return;
+  var email = emailEl.value.trim().toLowerCase();
+  var errEl = document.getElementById('st-err');
+  if (errEl) errEl.style.display = 'none';
+  if (!email) { if(errEl){errEl.textContent='Please enter your email.';errEl.style.display='block';} return; }
+
+  if (OTP_STATE === 'idle' || OTP_EMAIL !== email) {
+    requestOtp(email);
   } else if (OTP_STATE === 'sent') {
-    verifyOtp(roll);
+    verifyOtp(email);
   }
 }
 
-function requestOtp(roll) {
+function requestOtp(email) {
   var list = document.getElementById('status-list');
-  list.innerHTML = '<div class="tracker-empty">Sending verification code\u2026</div>';
-  apiGetPublic('requestOtp', { rollNumber: roll })
-    .then(function(d) {
-      if (d.status === 'ok') {
-        OTP_STATE = 'sent'; OTP_ROLL = roll;
-        var otpRow = document.getElementById('otp-row');
-        if (!otpRow) {
-          otpRow = document.createElement('div');
-          otpRow.id = 'otp-row';
-          otpRow.className = 'tracker-search';
-          otpRow.style.marginTop = '10px';
-          otpRow.innerHTML = '<input type="text" id="st-otp" placeholder="6-digit code" maxlength="6" style="font-family:monospace;letter-spacing:.15em" onkeydown="if(event.key===\'Enter\')checkStatus()"/><button class="btn-primary" onclick="checkStatus()">Verify</button>';
-          document.querySelector('.tracker-body').insertBefore(otpRow, list);
-        } else { otpRow.style.display = 'flex'; }
-        list.innerHTML = '<div class="tracker-empty" style="color:var(--g2)">A 6-digit code was sent to ' + esc(d.maskedEmail) + '.<br><span style="font-size:12px">Enter it above and click Verify.</span></div>';
-      } else {
-        list.innerHTML = '<div class="tracker-empty">' + esc(d.message || 'Could not send code. Check your roll number.') + '</div>';
-      }
+  if (list) list.innerHTML = '<div class="tracker-empty">Sending verification code\u2026</div>';
+  OTP_EMAIL = email;
+
+  doApiStudentOtp(email, COURSE_ID)
+    .then(function() {
+      OTP_STATE = 'sent';
+      var otpRow = document.getElementById('otp-row');
+      if (!otpRow) {
+        otpRow = document.createElement('div');
+        otpRow.id = 'otp-row';
+        otpRow.className = 'tracker-search';
+        otpRow.style.marginTop = '10px';
+        otpRow.innerHTML = '<input type="text" id="st-otp" placeholder="6-digit code" maxlength="6" style="font-family:monospace;letter-spacing:.15em" onkeydown="if(event.key===\'Enter\')checkStatus()"/><button class="btn-primary" onclick="checkStatus()">Verify</button>';
+        var tb = document.querySelector('.tracker-body');
+        if (tb && list) tb.insertBefore(otpRow, list);
+      } else { otpRow.style.display = 'flex'; }
+      if (list) list.innerHTML = '<div class="tracker-empty" style="color:var(--g2)">A 6-digit code was sent to <strong>' + esc(email) + '</strong>.<br><span style="font-size:12px">Enter it above and click Verify.</span></div>';
     })
-    .catch(function() {
-      list.innerHTML = '<div class="tracker-empty">Connection error. Please try again.</div>';
+    .catch(function(err) {
+      OTP_STATE = 'idle';
+      var msg = (err && err.data && err.data.detail) || (err && err.message) || 'Could not send code';
+      if (list) list.innerHTML = '<div class="tracker-empty">' + esc(msg) + '</div>';
     });
 }
 
-function verifyOtp(roll) {
+function verifyOtp(email) {
   var otp  = (gv('st-otp') || '').trim();
   var list = document.getElementById('status-list');
-  if (!otp) { document.getElementById('st-err').textContent = 'Enter the 6-digit code.'; document.getElementById('st-err').style.display = 'block'; return; }
-  list.innerHTML = '<div class="tracker-empty">Verifying\u2026</div>';
-  apiGetPublic('checkStatus', { rollNumber: roll, otp: otp })
+  var errEl = document.getElementById('st-err');
+  if (!otp) { if(errEl){errEl.textContent='Enter the 6-digit code.';errEl.style.display='block';} return; }
+  if (list) list.innerHTML = '<div class="tracker-empty">Verifying\u2026</div>';
+
+  doApiVerifyOtp(email, otp, COURSE_ID)
     .then(function(d) {
-      if (d.status === 'ok') {
-        OTP_STATE = 'idle';
-        var otpRow = document.getElementById('otp-row'); if(otpRow) otpRow.style.display = 'none';
-        renderStatusResults(d.rows);
-      } else {
-        list.innerHTML = '<div class="tracker-empty" style="color:var(--red)">' + esc(d.message || 'Verification failed.') + '</div>';
-      }
+      OTP_STATE = 'idle';
+      setStudentToken(d.access_token);
+      var otpRow = document.getElementById('otp-row'); if(otpRow) otpRow.style.display = 'none';
+      loadStudentQueries();
     })
     .catch(function() {
-      list.innerHTML = '<div class="tracker-empty">Connection error. Please try again.</div>';
+      if (list) list.innerHTML = '<div class="tracker-empty" style="color:var(--red)">Verification failed. Please try again.</div>';
     });
 }
+
+function loadStudentQueries() {
+  var token = getStudentToken();
+  var list  = document.getElementById('status-list');
+  if (!token) { if(list) list.innerHTML='<div class="tracker-empty">Please verify OTP first.</div>'; return; }
+  if (list) list.innerHTML = '<div class="tracker-empty">Loading\u2026</div>';
+
+  apiFetch('GET', '/queries/student', null, token)
+    .then(function(d) { renderStatusResults(d.items || []); })
+    .catch(function(err) {
+      if (err && err.status === 401) { clearStudentToken(); if(list) list.innerHTML='<div class="tracker-empty">Session expired — please re-verify.</div>'; return; }
+      if (list) list.innerHTML = '<div class="tracker-empty">Error loading queries.</div>';
+    });
+}
+
+var STATUS_LABELS = { pending:'Pending', in_review:'Reviewing', resolved:'Resolved', rejected:'Rejected' };
 
 function renderStatusResults(rows) {
   var list = document.getElementById('status-list');
   if (!rows || rows.length === 0) {
-    list.innerHTML = '<div class="tracker-empty">No queries found for this roll number.<br><span style="font-size:12px">Submit a query above and it will appear here.</span></div>';
+    if (list) list.innerHTML = '<div class="tracker-empty">No queries found for your email.<br><span style="font-size:12px">Submit a query above and it will appear here.</span></div>';
     return;
   }
   var html = '';
   rows.forEach(function(r) {
-    var st     = (r.status || 'Pending').trim();
-    var stCls  = st==='Resolved'?'st-resolved':st==='Rejected'?'st-rejected':st==='Reviewing'?'st-review':'st-pending';
-    var stIcon = st==='Resolved'?'\u2713':st==='Rejected'?'\u2717':st==='Reviewing'?'\uD83D\uDD0D':'\u23F3';
-    var tCls   = TYPE_BADGE[r.queryType] || 'tb-att';
-    var tLabel = TYPE_LABEL[r.queryType] || esc(r.queryType);
-    html += '<div class="status-item"><div class="si-head"><span class="si-ref">'+esc(r.referenceId)+'</span><span class="dyn-badge '+tCls+'" style="font-size:10px;padding:2px 8px">'+tLabel+'</span>'+(r.labNumber?'<span class="si-lab">'+esc(r.labNumber)+'</span>':'')+'<span class="si-ts">'+esc(r.timestamp)+'</span></div><div class="si-body"><span class="status-badge '+stCls+'">'+stIcon+' '+esc(st)+'</span>'+(r.notes?'<div class="instructor-note"><strong>Instructor comment: </strong>'+esc(r.notes)+'</div>':'')+'</div></div>';
+    var st     = r.status || 'pending';
+    var stLabel = STATUS_LABELS[st] || st;
+    var stCls  = st==='resolved'?'st-resolved':st==='rejected'?'st-rejected':st==='in_review'?'st-review':'st-pending';
+    var stIcon = st==='resolved'?'\u2713':st==='rejected'?'\u2717':st==='in_review'?'\uD83D\uDD0D':'\u23F3';
+    var date   = r.created_at ? new Date(r.created_at).toLocaleDateString() : '';
+    html += '<div class="status-item"><div class="si-head"><span class="si-ref">'+esc(String(r.id||''))+'</span><span class="si-ts">'+date+'</span></div>'
+          + '<div class="si-subject">'+esc(r.subject||'')+'</div>'
+          + '<div class="si-body"><span class="status-badge '+stCls+'">'+stIcon+' '+stLabel+'</span>'
+          + (r.instructor_note?'<div class="instructor-note"><strong>Instructor comment: </strong>'+esc(r.instructor_note)+'</div>':'')+'</div></div>';
   });
-  list.innerHTML = html;
+  if (list) list.innerHTML = html;
 }
 
-// SETTINGS — load from API, apply branding dynamically
+// SETTINGS — load from REST API /courses/{course_id}
+// course_id comes from ?course=UUID URL parameter
+var COURSE_ID = new URLSearchParams(location.search).get('course') || '';
+
 function loadSettings() {
   loadedSettings = { attendance:true, marks:true, assignment:true, final:true, project:true };
   renderQueryCards();
-  apiGetPublic('getCourseSettings')
+
+  if (!COURSE_ID) return; // No course_id — static defaults only
+
+  publicGet('/courses/' + COURSE_ID)
     .then(function(d) {
-      if (d.status === 'ok') {
-        if (d.settings) { loadedSettings = d.settings; }
-        if (d.course)   { loadedCourse   = d.course; applyCourseBranding(d.course); }
-        renderQueryCards();
-        Object.keys(ALL_TYPES).forEach(function(k){
-          if (loadedSettings && !loadedSettings[k] && selectedTypes.has(k)) toggleType(k);
-        });
-      }
+      // Map v3 course fields to legacy loadedCourse shape
+      loadedCourse = {
+        courseName:     d.name          || '',
+        isLab:          false,
+        sessionCount:   14,
+        sessionLabel:   'Session',
+        sections:       [],
+        term:           d.semester      || '',
+        instructorName: '',
+        emailDomain:    '',
+        rollFormat:     d.roll_pattern  || '',
+        universityName: '',
+        submissionOpen: d.submission_open !== false,
+        closedMessage:  '',
+        announcement:   ''
+      };
+      // Derive email domain from email_pattern if possible
+      var ep = d.email_pattern || '';
+      var domMatch = ep.match(/@([a-zA-Z0-9.\-]+)\$/);
+      if (domMatch) loadedCourse.emailDomain = domMatch[1];
+      applyCourseBranding(loadedCourse);
+      renderQueryCards();
     })
     .catch(function() {});
 }

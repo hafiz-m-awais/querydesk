@@ -21,34 +21,25 @@ let currentPage = 1;
 
 // ── Auth ──────────────────────────────────────────────────────────
 function doLogin() {
-  var pw  = document.getElementById('pw-input').value;
-  var btn = document.querySelector('.login-card .btn-primary');
-  if (!pw) return;
-
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    setToken('demo'); // demo mode
-    showApp(); return;
-  }
+  var email = (document.getElementById('email-input') ? document.getElementById('email-input').value : '').trim();
+  var pw    = document.getElementById('pw-input').value;
+  var btn   = document.querySelector('.login-card .btn-primary');
+  if (!email || !pw) return;
 
   btn.disabled = true; btn.textContent = 'Signing in\u2026';
 
-  // Password sent ONCE here. Server returns a token; password never stored.
-  apiGetPublic('login', { password: pw })
+  doApiLogin(email, pw)
     .then(function(d) {
       btn.disabled = false; btn.textContent = 'Sign in';
-      if (d.status === 'ok' && d.token) {
-        setToken(d.token);
-        showApp();
-      } else {
-        document.getElementById('login-err').style.display = 'block';
-        document.getElementById('pw-input').value = '';
-        document.getElementById('pw-input').focus();
-      }
+      setToken(d.access_token);
+      setRefreshToken(d.refresh_token);
+      showApp();
     })
     .catch(function() {
       btn.disabled = false; btn.textContent = 'Sign in';
-      document.getElementById('login-err').textContent = 'Network error. Try again.';
       document.getElementById('login-err').style.display = 'block';
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-input').focus();
     });
 }
 
@@ -59,8 +50,9 @@ function showApp() {
 }
 
 function doLogout() {
-  apiGet('logout').catch(function() {});
+  doApiLogout().catch(function() {});
   clearToken();
+  clearRefreshToken();
   location.reload();
 }
 
@@ -69,26 +61,47 @@ function loadData() {
   document.getElementById('table-body').innerHTML =
     '<tr><td colspan="10" class="loading-row"><span class="spinner"></span></td></tr>';
 
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    allRows = typeof DEMO_DATA !== 'undefined' ? DEMO_DATA : [];
-    updateStats(); renderTable(); return;
-  }
-
-  apiGet('getData')
+  apiGet('/queries', { page: 1, page_size: 500 })
     .then(function(d) {
-      if (d.needsLogin) { clearToken(); location.reload(); return; }
-      if (d.status === 'ok') {
-        allRows = d.rows || [];
-        if (d.course)   { loadedCourse = d.course; applyBranding(d.course); }
-        if (d.settings) applySettingsToggles(d.settings);
-        currentPage = 1;
-        updateStats(); renderTable();
-        var now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-        var di = document.getElementById('data-info');
-        if (di) di.textContent = allRows.length + ' quer' + (allRows.length === 1 ? 'y' : 'ies') + ' \u00b7 refreshed ' + now;
-      } else { showErrRow(d.message || 'Load failed'); }
+      // Normalize v3 fields to the UI's legacy field names
+      allRows = (d.items || []).map(function(r) {
+        return {
+          referenceId:   r.id,
+          name:          r.student_name,
+          rollNumber:    r.roll_no,
+          email:         r.student_email,
+          section:       '',  // not in v3 schema
+          queryType:     'query',
+          description:   r.description,
+          status:        normalizeStatus(r.status),
+          notes:         r.instructor_note || '',
+          timestamp:     r.created_at,
+          attachmentUrl: r.attachment_url || '',
+          labNumber:     '',
+          labDate:       '',
+          isUrgent:      false,
+          _raw:          r   // keep raw for PATCH operations
+        };
+      });
+      currentPage = 1;
+      updateStats(); renderTable();
+      var now = new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      var di = document.getElementById('data-info');
+      if (di) di.textContent = allRows.length + ' quer' + (allRows.length === 1 ? 'y' : 'ies') + ' \u00b7 refreshed ' + now;
     })
-    .catch(function(err) { showErrRow('Network error: ' + err.message); });
+    .catch(function(err) {
+      if (err.status === 401) { clearToken(); location.reload(); return; }
+      showErrRow('Network error: ' + err.message);
+    });
+}
+
+function normalizeStatus(s) {
+  var map = { pending:'Pending', in_review:'Reviewing', resolved:'Resolved', rejected:'Rejected' };
+  return map[s] || (s ? s.charAt(0).toUpperCase() + s.slice(1) : 'Pending');
+}
+function denormalizeStatus(s) {
+  var map = { Pending:'pending', Reviewing:'in_review', Resolved:'resolved', Rejected:'rejected' };
+  return map[s] || s.toLowerCase();
 }
 
 function showErrRow(msg) {
@@ -251,7 +264,6 @@ function closeModal() {
 function saveStatus() {
   var newStatus = document.getElementById('m-status').value;
   var notes     = document.getElementById('m-notes').value.trim();
-  var notify    = document.getElementById('m-notify') ? document.getElementById('m-notify').checked : false;
   var row = allRows.find(function(r) { return r.referenceId === editingRef; });
   if (!row) return;
 
@@ -259,12 +271,10 @@ function saveStatus() {
   updateStats(); renderTable(); closeModal();
   toast('Status updated to ' + newStatus);
 
-  if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    apiGet('updateStatus', {
-      referenceId: editingRef, status: newStatus, notes: notes,
-      notify: notify ? 'true' : 'false'
-    }).catch(function(err) { toast('Sync error: ' + err.message); });
-  }
+  apiPatch('/queries/' + row.referenceId, {
+    status: denormalizeStatus(newStatus),
+    instructor_note: notes || null
+  }).catch(function(err) { toast('Sync error: ' + err.message); });
 }
 
 // ── Delete — proper confirm modal, not browser confirm() ──────────
@@ -296,9 +306,7 @@ function confirmDelete(refId) {
   updateStats(); renderTable(); closeModal();
   cancelDelete(); // restore footer for next open
   toast('Query deleted');
-  if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
-    apiGet('deleteQuery', { referenceId: refId }).catch(function() {});
-  }
+  apiDelete('/queries/' + refId).catch(function() {});
 }
 
 // ── Bulk actions ───────────────────────────────────────────────────
@@ -334,12 +342,12 @@ function applyBulk() {
   if (!confirm(msg)) return;
   refs.forEach(function(ref) {
     var row = allRows.find(function(r) { return r.referenceId === ref; });
-    if (row) {
-      row.status = newStatus;
-      if (SCRIPT_URL && SCRIPT_URL !== 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE')
-        apiGet('updateStatus', { referenceId:ref, status:newStatus, notes:row.notes||'' }).catch(function(){});
-    }
+    if (row) row.status = newStatus;
   });
+  apiPost('/queries/bulk-update', {
+    query_ids: refs,
+    status: denormalizeStatus(newStatus)
+  }).catch(function(err) { toast('Bulk update error: ' + err.message); });
   clearBulk(); updateStats(); renderTable();
   toast('Updated ' + refs.length + ' quer' + (refs.length === 1 ? 'y' : 'ies') + ' to ' + newStatus);
 }
@@ -350,30 +358,9 @@ function closeSettings() { document.getElementById('settings-overlay').classList
 function openAnalytics() { renderAnalytics(); document.getElementById('analytics-overlay').classList.add('open'); }
 function closeAnalytics(){ document.getElementById('analytics-overlay').classList.remove('open'); }
 
-function loadSettings() {
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
-  apiGet('getData')
-    .then(function(d) {
-      if (d.needsLogin) { clearToken(); location.reload(); return; }
-      if (d.status === 'ok') {
-        if (d.settings) applySettingsToggles(d.settings);
-        if (d.course)   { loadedCourse = d.course; applyBranding(d.course); loadCourseSettings(d.course); }
-      }
-    })
-    .catch(function() {});
-}
+function loadSettings() { /* Branding loaded from JWT claims or a future /me endpoint */ }
 
-function loadSettingsPanel() {
-  if (!SCRIPT_URL || SCRIPT_URL === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
-  apiGet('getData')
-    .then(function(d) {
-      if (d.status === 'ok') {
-        if (d.settings) applySettingsToggles(d.settings);
-        if (d.course)   loadCourseSettings(d.course);
-      }
-    })
-    .catch(function() {});
-}
+function loadSettingsPanel() { /* Settings panel shows current loaded course data */ }
 
 function applySettingsToggles(s) {
   ['attendance','marks','assignment','final','project'].forEach(function(k) {
@@ -412,44 +399,34 @@ function loadCourseSettings(c) {
 }
 
 function saveAllSettings() {
-  var settings = {};
-  ['attendance','marks','assignment','final','project'].forEach(function(k) {
-    var el = document.getElementById('tog-' + k);
-    settings[k] = el ? el.checked : true;
-  });
-
   function gv(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
   var openEl = document.getElementById('s-open');
-  var cs = {
-    courseName:     gv('s-coursename'),
-    term:           gv('s-term'),
-    sessionLabel:   gv('s-sessionlabel') || 'Session',
-    sessionCount:   parseInt(gv('s-sessioncount'), 10) || 14,
-    sections:       gv('s-sections').split(',').map(function(s){return s.trim();}).filter(Boolean),
-    instructorName: gv('s-instructorname'),
-    emailDomain:    gv('s-emaildomain'),
-    universityName: gv('s-universityname'),
-    rollFormat:     gv('s-rollformat'),
-    closedMessage:  gv('s-closedmsg'),
-    announcement:   gv('s-announcement'),
-    submissionOpen: openEl ? openEl.checked : true
+
+  var courseId = loadedCourse && loadedCourse.id;
+  if (!courseId) { toast('No course loaded — open a course first'); return; }
+
+  var body = {
+    name:             gv('s-coursename') || undefined,
+    semester:         gv('s-term')       || undefined,
+    submission_open:  openEl ? openEl.checked : undefined,
+    email_pattern:    gv('s-emaildomain') ? ('^[^\\s@]+@' + gv('s-emaildomain').replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '$') : undefined,
+    roll_pattern:     gv('s-rollformat') || undefined
   };
+  // Remove undefined keys
+  Object.keys(body).forEach(function(k){ if (body[k] === undefined) delete body[k]; });
 
   var btn = document.querySelector('.settings-foot .btn-primary');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving\u2026'; }
 
-  Promise.all([
-    apiGet('saveSettings',      { settings: JSON.stringify(settings) }),
-    apiGet('saveCourseSettings', { courseSettings: JSON.stringify(cs) })
-  ])
-  .then(function() {
-    if (btn) { btn.disabled = false; btn.textContent = 'Save all settings'; }
-    closeSettings(); loadData(); toast('Settings saved');
-  })
-  .catch(function(err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Save all settings'; }
-    toast('Save failed: ' + err.message);
-  });
+  apiPatch('/courses/' + courseId, body)
+    .then(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save all settings'; }
+      closeSettings(); loadData(); toast('Settings saved');
+    })
+    .catch(function(err) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Save all settings'; }
+      toast('Save failed: ' + err.message);
+    });
 }
 
 // ── Analytics ──────────────────────────────────────────────────────
@@ -479,19 +456,12 @@ function renderAnalytics() {
   body.innerHTML = tableHtml('By Status', byStatus) + tableHtml('By Type', byType) + tableHtml('By Section', bySection);
 }
 
-// ── Export CSV ─────────────────────────────────────────────────────
+// ── Export CSV (server-side) ───────────────────────────────────────
 function exportCSV() {
-  if (!allRows.length) { toast('No data to export'); return; }
-  var headers = ['Reference ID','Timestamp','Email','Name','Roll','Section','Session','Date','Type','Description','Status','Notes','Attachment','Urgent'];
-  var rows = allRows.map(function(r) {
-    return [r.referenceId,r.timestamp,r.email,r.name,r.rollNumber,r.section,r.labNumber,r.labDate,r.queryType,r.description,r.status,r.notes,r.attachmentUrl,r.isUrgent?'Yes':'No']
-      .map(function(v){ return '"' + String(v||'').replace(/"/g,'""') + '"'; }).join(',');
-  });
-  var blob = new Blob([[headers.join(',')].concat(rows).join('\n')], { type: 'text/csv' });
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'querydesk-' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
+  var filename = 'querydesk-' + new Date().toISOString().slice(0, 10) + '.csv';
+  apiDownload('/queries/export', filename)
+    .then(function() { toast('CSV downloaded'); })
+    .catch(function(err) { toast('Export failed: ' + err.message); });
 }
 
 // ── UI helpers ─────────────────────────────────────────────────────

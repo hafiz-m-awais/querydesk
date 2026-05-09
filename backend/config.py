@@ -3,12 +3,17 @@ backend/config.py
 Application settings loaded from environment / .env file.
 """
 from functools import lru_cache
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Resolve .env relative to this file so it works regardless of CWD
+_ENV_FILE = Path(__file__).parent / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -25,6 +30,13 @@ class Settings(BaseSettings):
     # ── OTP ───────────────────────────────────────────────────
     otp_ttl_minutes: int = 10
     otp_length: int = 6
+    otp_hmac_secret: str = ""  # if set, OTPs are HMAC-SHA256-hashed before storage
+
+    # ── Rate limiting ─────────────────────────────────────────
+    rate_limit_enabled: bool = True
+    rate_limit_otp_per_minute: int = 5
+    rate_limit_login_per_minute: int = 10
+    rate_limit_submit_per_minute: int = 20
 
     # ── Email (SMTP) ───────────────────────────────────────────
     smtp_host: str = "smtp.resend.com"

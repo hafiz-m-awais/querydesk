@@ -107,7 +107,9 @@ CREATE TABLE IF NOT EXISTS otp_challenges (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_otp_email ON otp_challenges (email);
+-- Composite index for the verify-otp lookup (email + code + used + expires_at)
+CREATE INDEX IF NOT EXISTS idx_otp_email          ON otp_challenges (email);
+CREATE INDEX IF NOT EXISTS idx_otp_email_used_exp ON otp_challenges (email, used, expires_at);
 
 -- ─── Refresh Tokens ──────────────────────────────────────────
 -- Tracks issued refresh tokens so we can revoke them
@@ -135,12 +137,18 @@ DECLARE
 BEGIN
     FOREACH t IN ARRAY ARRAY['instructors','courses','queries']
     LOOP
-        EXECUTE format(
-            'CREATE TRIGGER trg_%I_updated_at
-             BEFORE UPDATE ON %I
-             FOR EACH ROW EXECUTE FUNCTION set_updated_at()',
-            t, t
-        );
+        -- Only create the trigger if it doesn't already exist
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_trigger
+            WHERE tgname = 'trg_' || t || '_updated_at'
+        ) THEN
+            EXECUTE format(
+                'CREATE TRIGGER trg_%I_updated_at
+                 BEFORE UPDATE ON %I
+                 FOR EACH ROW EXECUTE FUNCTION set_updated_at()',
+                t, t
+            );
+        END IF;
     END LOOP;
 END;
 $$;

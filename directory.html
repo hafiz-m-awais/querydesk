@@ -135,76 +135,49 @@ body {
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  COURSE DIRECTORY
-//
-//  REGISTRY_URL — set this once after deploying gas_registry/.
-//  When set, courses are fetched live from the registry Google Sheet.
-//  When empty, falls back to the COURSES array below.
+//  COURSE DIRECTORY — fetches live from REST API /courses
 // ═══════════════════════════════════════════════════════════════
 
-var REGISTRY_URL = 'https://script.google.com/macros/s/AKfycbyXbY63pZKj_-bmmeipxdaPFLMrke9Da6p5FiJOEcQhuCNsCYi-mlmcSVrLvWsFHB2Wug/exec'; // ← paste your registry GAS /exec URL here
+var API_BASE = 'https://querydesk.onrender.com';
+// Allow ?api=http://localhost:8000 override for local dev
+(function() {
+  var qs = new URLSearchParams(location.search).get('api');
+  if (qs) API_BASE = qs.replace(/\/$/, '');
+})();
 
-// ── Fallback / seed courses (used when REGISTRY_URL is empty) ──
-var COURSES = [
-  {
-    name:       'ML for Business Analytics',
-    instructor: 'Hafiz M. Awais',
-    dept:       'BSBA / MSBA',
-    term:       'Spring 2026',
-    sections:   ['BSBA-6A', 'BSBA-6B', 'MSBA'],
-    gasUrl:     'https://script.google.com/macros/s/AKfycbwIXl9VGefgmE-JGYftiqCduDcZ8wlFngKPMpGW-odaJ747pa5MDZttwfeG_Yr9hfoC8w/exec'
-  }
-];
+// ── Fallback seed courses (shown when API is unreachable) ──────
+var COURSES_FALLBACK = [];
 
-// ── JSONP helper (inline — directory.html doesn't load api.js) ──
-function jsonpGet(url) {
-  return new Promise(function(resolve, reject) {
-    var cbName = '__dirJp' + Date.now() + Math.random().toString(36).slice(2, 7);
-    var script = null;
-    var timer  = setTimeout(function() { cleanup(); reject(new Error('Timeout')); }, 10000);
-    function cleanup() {
-      clearTimeout(timer);
-      delete window[cbName];
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-    }
-    window[cbName] = function(data) { cleanup(); resolve(data); };
-    script = document.createElement('script');
-    script.onerror = function() { cleanup(); reject(new Error('Failed to load')); };
-    script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + cbName;
-    document.head.appendChild(script);
-  });
-}
-
-// ── Entry point — fetch from registry or fall back to COURSES ───
+// ── Fetch from REST API or fall back ─────────────────────────
 function fetchAndRender() {
-  if (!REGISTRY_URL) { render(COURSES); return; }
-
   var dir = document.getElementById('directory');
-  dir.innerHTML = '<div class="empty" style="padding:2rem;color:var(--th)">Loading courses…</div>';
+  dir.innerHTML = '<div class="empty" style="padding:2rem;color:var(--th)">Loading courses\u2026</div>';
 
-  jsonpGet(REGISTRY_URL + '?action=listCourses')
+  fetch(API_BASE + '/courses')
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(data) {
-      var courses = (data.ok && data.courses && data.courses.length)
-        ? data.courses
-        : COURSES; // fallback when registry is empty
+      var courses = data.items && data.items.length ? data.items : COURSES_FALLBACK;
       render(courses);
     })
-    .catch(function() { render(COURSES); });
+    .catch(function() { render(COURSES_FALLBACK); });
 }
 
-// ── Group courses by term then render ───────────────────────────
+// ── Group courses by term then render ─────────────────────────
 function render(courses) {
   var dir = document.getElementById('directory');
 
   if (!courses || !courses.length) {
-    dir.innerHTML = '<div class="empty">No courses listed yet.<br><span style="font-size:12px">Instructors can register at <a href="setup.html" style="color:var(--g1)">setup.html</a></span></div>';
+    dir.innerHTML = '<div class="empty">No courses listed yet.<br><span style="font-size:12px">Instructors can add courses via the admin dashboard.</span></div>';
     return;
   }
 
-  // Group by term
+  // Group by semester/term
   var byTerm = {};
   courses.forEach(function(c) {
-    var t = c.term || 'Current Term';
+    var t = c.semester || 'Current Term';
     if (!byTerm[t]) byTerm[t] = [];
     byTerm[t].push(c);
   });
@@ -214,26 +187,24 @@ function render(courses) {
     html += '<div class="term-label">' + esc(term) + '</div>';
     html += '<div class="courses-grid">';
     byTerm[term].forEach(function(c) {
-      var encodedUrl = encodeURIComponent(c.gasUrl);
-      var studentLink = 'index.html?gs=' + encodedUrl;
-      var adminLink   = 'admin.html?gs=' + encodedUrl;
-      var sectionsHtml = (c.sections || []).map(function(s) {
-        return '<span class="sec-badge">' + esc(s) + '</span>';
-      }).join('');
+      var studentLink = 'index.html?course=' + encodeURIComponent(c.id);
+      var adminLink   = 'admin.html';
+      var isOpen      = c.submission_open !== false;
       html += '<div class="course-card">'
         + '<div class="course-card-head">'
         +   '<div class="course-name">' + esc(c.name) + '</div>'
         +   '<div class="instructor">'
         +     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-1px;margin-right:4px"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>'
-        +     esc(c.instructor || '') + (c.dept ? ' &middot; ' + esc(c.dept) : '')
+        +     esc(c.instructor_name || 'Instructor')
         +   '</div>'
-        +   (sectionsHtml ? '<div class="sections-row">' + sectionsHtml + '</div>' : '')
         + '</div>'
         + '<div class="course-card-body">'
-        +   '<a class="btn-submit" href="' + studentLink + '">'
-        +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-        +     'Submit a query'
-        +   '</a>'
+        +   (isOpen
+              ? '<a class="btn-submit" href="' + studentLink + '">'
+                + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+                + 'Submit a query'
+                + '</a>'
+              : '<span class="btn-submit" style="opacity:.45;cursor:default">Submissions closed</span>')
         +   '<a class="btn-admin" href="' + adminLink + '" title="Instructor login">'
         +     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>'
         +   '</a>'

@@ -23,9 +23,11 @@
     </svg>
     <h1>Instructor Login</h1>
     <p>Secure admin panel for your course</p>
-    <input type="password" id="pw-input" placeholder="Enter admin password"
+    <input type="email" id="email-input" placeholder="Instructor email"
+           onkeydown="if(event.key==='Enter') document.getElementById('pw-input').focus()"/>
+    <input type="password" id="pw-input" placeholder="Password"
            onkeydown="if(event.key==='Enter') doLogin()"/>
-    <div class="login-err" id="login-err">Incorrect password. Try again.</div>
+    <div class="login-err" id="login-err">Incorrect email or password.</div>
     <button class="btn-primary" style="width:100%" onclick="doLogin()">Sign in</button>
   </div>
 </div>

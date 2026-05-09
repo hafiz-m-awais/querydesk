@@ -27,16 +27,16 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 # ── JWT helpers ───────────────────────────────────────────────────────────────
 
-def create_access_token(payload: dict[str, Any]) -> str:
+def create_access_token(payload: dict[str, Any], expires_in_minutes: int | None = None) -> str:
     """
     Issue a signed JWT.
     payload must include at least {"sub": "<instructor_id>"}.
+    expires_in_minutes overrides the global default when provided.
     """
     settings = get_settings()
     data = payload.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.jwt_access_expire_minutes
-    )
+    minutes = expires_in_minutes if expires_in_minutes is not None else settings.jwt_access_expire_minutes
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
     data["exp"] = expire
     data["iat"] = datetime.now(timezone.utc)
     return jwt.encode(data, settings.jwt_secret, algorithm=settings.jwt_algorithm)
